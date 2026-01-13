@@ -24,14 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	appsv1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-)
-
+	v1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 )
 
 // DemoAppReconciler reconciles a DemoApp object
@@ -43,6 +42,9 @@ type DemoAppReconciler struct {
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/finalizers,verbs=update
+
+// ⬇⬇⬇ DAS FEHLTE ⬇⬇⬇
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -61,7 +63,7 @@ func (r *DemoAppReconciler) Reconcile(
 	logger := logf.FromContext(ctx)
 
 	// 1. Custom Resource laden
-	var demo DemoApp
+	var demo v1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demo); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -78,6 +80,35 @@ func (r *DemoAppReconciler) Reconcile(
 		Name:      deployName,
 		Namespace: demo.Namespace,
 	}, &deploy)
+
+	// 3.1 ReadinessProbe setzen
+    var readinessProbe *corev1.Probe
+
+    if demo.Spec.ReadinessProbe != nil && demo.Spec.ReadinessProbe.HTTPGet != nil {
+        rp := demo.Spec.ReadinessProbe
+
+        readinessProbe = &corev1.Probe{
+            ProbeHandler: corev1.ProbeHandler{
+                HTTPGet: &corev1.HTTPGetAction{
+                    Path: rp.HTTPGet.Path,
+                    Port: intstr.FromInt(int(rp.HTTPGet.Port)),
+                    Scheme: func() corev1.URIScheme {
+                        if rp.HTTPGet.Scheme != nil {
+                            return *rp.HTTPGet.Scheme
+                        }
+                        return corev1.URISchemeHTTP
+                    }(),
+                },
+            },
+        }
+
+        if rp.InitialDelaySeconds != nil {
+            readinessProbe.InitialDelaySeconds = *rp.InitialDelaySeconds
+        }
+        if rp.PeriodSeconds != nil {
+            readinessProbe.PeriodSeconds = *rp.PeriodSeconds
+        }
+    }
 
 	// 4. Deployment existiert nicht → erstellen
 	if apierrors.IsNotFound(err) {
@@ -105,16 +136,9 @@ func (r *DemoAppReconciler) Reconcile(
 								Name:  "app",
 								Image: demo.Spec.Image,
 								Ports: []corev1.ContainerPort{
-									{ContainerPort: 8080},
+									{ContainerPort: 80},
 								},
-								ReadinessProbe: &corev1.Probe{
-									ProbeHandler: corev1.ProbeHandler{
-										HTTPGet: &corev1.HTTPGetAction{
-											Path: "/",
-											Port: intstr.FromInt(8080),
-										},
-									},
-								},
+                                ReadinessProbe: readinessProbe,
 							},
 						},
 					},
@@ -146,8 +170,8 @@ func (r *DemoAppReconciler) Reconcile(
 
 func (r *DemoAppReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&DemoApp{}).
+		For(&v1alpha1.DemoApp{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
-}
+

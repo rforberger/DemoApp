@@ -46,6 +46,30 @@ spec:
               image:
                 description: Image für den Pod
                 type: string
+              readinessProbe:
+                properties:
+                  httpGet:
+                    properties:
+                      path:
+                        type: string
+                      port:
+                        format: int32
+                        type: integer
+                      scheme:
+                        description: URIScheme identifies the scheme used for connection
+                          to a host for Get actions
+                        type: string
+                    required:
+                    - path
+                    - port
+                    type: object
+                  initialDelaySeconds:
+                    format: int32
+                    type: integer
+                  periodSeconds:
+                    format: int32
+                    type: integer
+                type: object
               replicas:
                 description: Anzahl Replikas
                 format: int32

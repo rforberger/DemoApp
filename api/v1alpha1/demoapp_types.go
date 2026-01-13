@@ -18,10 +18,30 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+type ReadinessProbeSpec struct {
+	// +optional
+	HTTPGet *HTTPGetProbeSpec `json:"httpGet,omitempty"`
+
+	// +optional
+	InitialDelaySeconds *int32 `json:"initialDelaySeconds,omitempty"`
+
+	// +optional
+	PeriodSeconds *int32 `json:"periodSeconds,omitempty"`
+}
+
+type HTTPGetProbeSpec struct {
+	Path string `json:"path"`
+	Port int32  `json:"port"`
+
+	// +optional
+	Scheme *corev1.URIScheme `json:"scheme,omitempty"`
+}
 
 // DemoAppSpec defines the desired state of DemoApp
 type DemoAppSpec struct {
@@ -39,6 +59,9 @@ type DemoAppSpec struct {
 
 	// Anzahl Replikas
 	Replicas *int32 `json:"replicas"`
+
+    // +optional
+    ReadinessProbe *ReadinessProbeSpec `json:"readinessProbe,omitempty"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.
