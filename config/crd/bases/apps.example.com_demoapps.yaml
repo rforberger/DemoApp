@@ -75,9 +75,37 @@ spec:
                                 format: int32
                                 type: integer
                             type: object
+                          resource:
+                            properties:
+                              limits:
+                                description: Maximale Ressourcen
+                                properties:
+                                  cpu:
+                                    description: CPU, z.B. "100m", "1"
+                                    pattern: ^([0-9]+m|[0-9]+(\.[0-9]+)?)$
+                                    type: string
+                                  memory:
+                                    description: Memory, z.B. "128Mi", "1Gi"
+                                    pattern: ^[0-9]+(Ki|Mi|Gi|Ti)$
+                                    type: string
+                                type: object
+                              requests:
+                                description: Mindest-Ressourcen
+                                properties:
+                                  cpu:
+                                    description: CPU, z.B. "100m", "1"
+                                    pattern: ^([0-9]+m|[0-9]+(\.[0-9]+)?)$
+                                    type: string
+                                  memory:
+                                    description: Memory, z.B. "128Mi", "1Gi"
+                                    pattern: ^[0-9]+(Ki|Mi|Gi|Ti)$
+                                    type: string
+                                type: object
+                            type: object
                         required:
                         - image
                         - name
+                        - resource
                         type: object
                       type: array
                     name:
