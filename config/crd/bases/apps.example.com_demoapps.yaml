@@ -39,44 +39,119 @@ spec:
           spec:
             description: spec defines the desired state of DemoApp
             properties:
+              deployments:
+                description: Liste der Deployments
+                items:
+                  properties:
+                    containers:
+                      description: Container dieses Deployments
+                      items:
+                        properties:
+                          image:
+                            type: string
+                          name:
+                            type: string
+                          readinessProbe:
+                            properties:
+                              httpGet:
+                                properties:
+                                  path:
+                                    type: string
+                                  port:
+                                    format: int32
+                                    type: integer
+                                  scheme:
+                                    description: URIScheme identifies the scheme used
+                                      for connection to a host for Get actions
+                                    type: string
+                                required:
+                                - path
+                                - port
+                                type: object
+                              initialDelaySeconds:
+                                format: int32
+                                type: integer
+                              periodSeconds:
+                                format: int32
+                                type: integer
+                            type: object
+                        required:
+                        - image
+                        - name
+                        type: object
+                      type: array
+                    name:
+                      description: Name des Deployments
+                      type: string
+                    replicas:
+                      description: Anzahl Replikas
+                      format: int32
+                      type: integer
+                    resources:
+                      description: Ressourcen-Vorgaben
+                      properties:
+                        limits:
+                          description: Maximale Ressourcen
+                          properties:
+                            cpu:
+                              description: CPU, z.B. "100m", "1"
+                              pattern: ^([0-9]+m|[0-9]+(\.[0-9]+)?)$
+                              type: string
+                            memory:
+                              description: Memory, z.B. "128Mi", "1Gi"
+                              pattern: ^[0-9]+(Ki|Mi|Gi|Ti)$
+                              type: string
+                          type: object
+                        requests:
+                          description: Mindest-Ressourcen
+                          properties:
+                            cpu:
+                              description: CPU, z.B. "100m", "1"
+                              pattern: ^([0-9]+m|[0-9]+(\.[0-9]+)?)$
+                              type: string
+                            memory:
+                              description: Memory, z.B. "128Mi", "1Gi"
+                              pattern: ^[0-9]+(Ki|Mi|Gi|Ti)$
+                              type: string
+                          type: object
+                      type: object
+                    strategy:
+                      description: Deployment-Strategie
+                      properties:
+                        rollingUpdate:
+                          description: RollingUpdate-Parameter
+                          properties:
+                            maxSurge:
+                              description: Maximale Anzahl Pods über Soll
+                              format: int32
+                              type: integer
+                            maxUnavailable:
+                              description: Maximale Anzahl nicht verfügbarer Pods
+                              format: int32
+                              type: integer
+                          type: object
+                        type:
+                          description: 'Typ der Strategie: RollingUpdate oder Recreate'
+                          enum:
+                          - RollingUpdate
+                          - Recreate
+                          type: string
+                      type: object
+                  required:
+                  - containers
+                  - name
+                  type: object
+                type: array
               foo:
-                description: foo is an example field of DemoApp. Edit demoapp_types.go
-                  to remove/update
+                description: |-
+                  INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file
+                  The following markers will use OpenAPI v3 schema to validate the value
+                  More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
+                  foo is an example field of DemoApp. Edit demoapp_types.go to remove/update
                 type: string
-              image:
-                description: Image für den Pod
-                type: string
-              readinessProbe:
-                properties:
-                  httpGet:
-                    properties:
-                      path:
-                        type: string
-                      port:
-                        format: int32
-                        type: integer
-                      scheme:
-                        description: URIScheme identifies the scheme used for connection
-                          to a host for Get actions
-                        type: string
-                    required:
-                    - path
-                    - port
-                    type: object
-                  initialDelaySeconds:
-                    format: int32
-                    type: integer
-                  periodSeconds:
-                    format: int32
-                    type: integer
-                type: object
-              replicas:
-                description: Anzahl Replikas
-                format: int32
-                type: integer
             required:
-            - image
-            - replicas
+            - deployments
             type: object
           status:
             description: status defines the observed state of DemoApp

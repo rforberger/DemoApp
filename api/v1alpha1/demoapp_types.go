@@ -23,15 +23,68 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type DeploymentStrategySpec struct {
+	// Typ der Strategie: RollingUpdate oder Recreate
+	// +kubebuilder:validation:Enum=RollingUpdate;Recreate
+	// +optional
+	Type string `json:"type,omitempty"`
 
-type DeploymentSpec struct {
-	Name       string
-	Replicas   *int32
-	Strategy   *appsv1.DeploymentStrategy
-	Resources  *corev1.ResourceRequirements
-	Containers []ContainerSpec
+	// RollingUpdate-Parameter
+	// +optional
+	RollingUpdate *RollingUpdateSpec `json:"rollingUpdate,omitempty"`
 }
 
+type RollingUpdateSpec struct {
+	// Maximale Anzahl Pods über Soll
+	// +optional
+	MaxSurge *int32 `json:"maxSurge,omitempty"`
+
+	// Maximale Anzahl nicht verfügbarer Pods
+	// +optional
+	MaxUnavailable *int32 `json:"maxUnavailable,omitempty"`
+}
+
+type ResourceSpec struct {
+	// Mindest-Ressourcen
+	// +optional
+	Requests *ResourceValues `json:"requests,omitempty"`
+
+	// Maximale Ressourcen
+	// +optional
+	Limits *ResourceValues `json:"limits,omitempty"`
+}
+
+type ResourceValues struct {
+	// CPU, z.B. "100m", "1"
+	// +optional
+	// +kubebuilder:validation:Pattern=`^([0-9]+m|[0-9]+(\.[0-9]+)?)$`
+	CPU string `json:"cpu,omitempty"`
+
+	// Memory, z.B. "128Mi", "1Gi"
+	// +optional
+	// +kubebuilder:validation:Pattern=`^[0-9]+(Ki|Mi|Gi|Ti)$`
+	Memory string `json:"memory,omitempty"`
+}
+
+type DeploymentSpec struct {
+	// Name des Deployments
+	Name string `json:"name"`
+
+	// Anzahl Replikas
+	// +optional
+	Replicas *int32 `json:"replicas,omitempty"`
+
+	// Deployment-Strategie
+	// +optional
+	Strategy *DeploymentStrategySpec `json:"strategy,omitempty"`
+
+	// Ressourcen-Vorgaben
+	// +optional
+	Resources *ResourceSpec `json:"resources,omitempty"`
+
+	// Container dieses Deployments
+	Containers []ContainerSpec `json:"containers"`
+}
 
 type ReadinessProbeSpec struct {
 	// +optional

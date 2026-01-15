@@ -28,7 +28,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	v1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 )
@@ -80,6 +79,27 @@ func buildContainers(specs []ContainerSpec) []corev1.Container {
 	}
 
 	return containers
+}
+
+func buildDeploymentStrategy(s *DeploymentStrategySpec) appsv1.DeploymentStrategy {
+	if s == nil {
+		return appsv1.DeploymentStrategy{
+			Type: appsv1.RollingUpdateDeploymentStrategyType,
+		}
+	}
+
+	strategy := appsv1.DeploymentStrategy{
+		Type: appsv1.DeploymentStrategyType(s.Type),
+	}
+
+	if s.Type == "RollingUpdate" && s.RollingUpdate != nil {
+		strategy.RollingUpdate = &appsv1.RollingUpdateDeployment{
+			MaxSurge:       intstr.FromInt(int(*s.RollingUpdate.MaxSurge)),
+			MaxUnavailable: intstr.FromInt(int(*s.RollingUpdate.MaxUnavailable)),
+		}
+	}
+
+	return strategy
 }
 
 
