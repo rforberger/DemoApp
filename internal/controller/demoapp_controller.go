@@ -67,6 +67,9 @@ func buildDeployment(d demov1alpha1.DeploymentSpec, namespace string) *appsv1.De
                 MatchLabels: labels,
             },
 			Template: corev1.PodTemplateSpec{
+			    ObjectMeta: metav1.ObjectMeta{
+                    Labels: labels, // ⚡ Fix here
+                },
 				Spec: corev1.PodSpec{
 					Containers: buildContainers(d.Containers),
 				},
