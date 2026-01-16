@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	runtime "k8s.io/apimachinery/pkg/runtime"
+    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	demov1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 )
@@ -48,13 +49,23 @@ func buildDeployment(d demov1alpha1.DeploymentSpec, namespace string) *appsv1.De
 		replicas = *d.Replicas
 	}
 
+    labels := map[string]string{
+        "app":  d.Name,
+        "name": d.Name,
+        "tier": "backend",
+    }
+
 	deploy := &appsv1.Deployment{
-		ObjectMeta: ctrl.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      d.Name,
 			Namespace: namespace,
+			Labels: labels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
+			Selector: &metav1.LabelSelector{
+                MatchLabels: labels,
+            },
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					Containers: buildContainers(d.Containers),
