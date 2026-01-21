@@ -5,15 +5,17 @@ import (
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	runtime "k8s.io/apimachinery/pkg/runtime"
-    metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	demov1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
+
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // DemoAppReconciler reconciles a DemoApp object
@@ -49,27 +51,27 @@ func buildDeployment(d demov1alpha1.DeploymentSpec, namespace string) *appsv1.De
 		replicas = *d.Replicas
 	}
 
-    labels := map[string]string{
-        "app":  d.Name,
-        "name": d.Name,
-        "tier": "backend",
-    }
+	labels := map[string]string{
+		"app":  d.Name,
+		"name": d.Name,
+		"tier": "backend",
+	}
 
 	deploy := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      d.Name,
 			Namespace: namespace,
-			Labels: labels,
+			Labels:    labels,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-                MatchLabels: labels,
-            },
+				MatchLabels: labels,
+			},
 			Template: corev1.PodTemplateSpec{
-			    ObjectMeta: metav1.ObjectMeta{
-                    Labels: labels, // ⚡ Fix here
-                },
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels, // ⚡ Fix here
+				},
 				Spec: corev1.PodSpec{
 					Containers: buildContainers(d.Containers),
 				},

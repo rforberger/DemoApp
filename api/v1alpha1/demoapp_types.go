@@ -17,9 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/api/core/v1"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -107,13 +106,13 @@ type HTTPGetProbeSpec struct {
 }
 
 type ContainerSpec struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
 	Image string `json:"image"`
 
 	// +optional
 	ReadinessProbe *ReadinessProbeSpec `json:"readinessProbe,omitempty"`
 
-    // +optional
+	// +optional
 	Resources *ResourceSpec `json:"resources",omitempty"`
 }
 
@@ -123,12 +122,12 @@ type DemoAppSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	// The following markers will use OpenAPI v3 schema to validate the value
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
-    // foo is an example field of DemoApp. Edit demoapp_types.go to remove/update
-    // +optional
-    Foo *string `json:"foo,omitempty"`
+	// foo is an example field of DemoApp. Edit demoapp_types.go to remove/update
+	// +optional
+	Foo *string `json:"foo,omitempty"`
 
 	// Liste der Deployments
-    Deployments []DeploymentSpec `json:"deployments"`
+	Deployments []DeploymentSpec `json:"deployments"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.
@@ -151,8 +150,8 @@ type DemoAppStatus struct {
 	// +listType=map
 	// +listMapKey=type
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-	AvailableReplicas int32 `json:"availableReplicas,omitempty"`
+	Conditions        []metav1.Condition `json:"conditions,omitempty"`
+	AvailableReplicas int32              `json:"availableReplicas,omitempty"`
 }
 
 // +kubebuilder:object:root=true
