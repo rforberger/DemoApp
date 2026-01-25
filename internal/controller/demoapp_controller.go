@@ -19,13 +19,13 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
-//+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/status,verbs=get;update;patch
+
 // DemoAppReconciler reconciles a DemoApp object
 type DemoAppReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
 
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
     return &gatewayv1.Gateway{
