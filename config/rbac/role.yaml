@@ -5,9 +5,9 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - apps
+  - apps.example.com
   resources:
-  - deployments
+  - demoapps
   verbs:
   - create
   - delete
@@ -17,9 +17,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - apps
+  - apps.example.com
   resources:
-  - deployments/status
+  - demoapps/status
   verbs:
   - get
   - patch
