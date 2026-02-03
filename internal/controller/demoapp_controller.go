@@ -1,7 +1,7 @@
 package controller
 
-// +kubebuilder:rbac:groups=apps.example.com,resources=demoapps,verbs=get;list;watch;create;update;patch;delete,scope=Cluster
-// +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/status,verbs=get;update;patch,scope=Cluster
+// +kubebuilder:rbac:groups=apps.example.com,resources=demoapps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/status,verbs=get;update;patch
 
 import (
 	"context"
