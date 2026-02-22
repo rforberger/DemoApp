@@ -51,4 +51,13 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 15
+    gateway:
+      name: public-gateway
+      namespace: networking
+      http:
+        hostnames:
+          - demo.example.com
+        path: /
+        port: 80
+
 

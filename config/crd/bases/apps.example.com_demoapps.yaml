@@ -177,8 +177,33 @@ spec:
                   More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
                   foo is an example field of DemoApp. Edit demoapp_types.go to remove/update
                 type: string
+              gateway:
+                description: Gateway API integration
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                  port:
+                    format: int32
+                    type: integer
+                required:
+                - name
+                type: object
+              http:
+                properties:
+                  hostnames:
+                    items:
+                      type: string
+                    type: array
+                  path:
+                    type: string
+                required:
+                - hostnames
+                type: object
             required:
             - deployments
+            - http
             type: object
           status:
             description: status defines the observed state of DemoApp

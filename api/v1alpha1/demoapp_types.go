@@ -21,6 +21,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type GatewayRef struct {
+    Name      string `json:"name"`
+    Namespace string `json:"namespace,omitempty"`
+    Port      *int32  `json:"port,omitempty"`
+}
+
+type HTTPRouteSpec struct {
+    Hostnames []string `json:"hostnames"`
+    Path      string   `json:"path,omitempty"`
+}
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -129,6 +139,11 @@ type DemoAppSpec struct {
 
 	// Liste der Deployments
 	Deployments []DeploymentSpec `json:"deployments"`
+
+    // Gateway API integration
+    Gateway *GatewayRef `json:"gateway,omitempty"`
+
+    HTTP HTTPRouteSpec `json:"http"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.
