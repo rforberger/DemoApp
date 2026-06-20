@@ -21,6 +21,8 @@ import (
 
 	appsv1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 	"github.com/rforberger/demo-operator/internal/controller"
+
+	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -33,6 +35,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(appsv1alpha1.AddToScheme(scheme))
+
+	utilruntime.Must(gatewayv1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -185,4 +189,6 @@ func main() {
 		setupLog.Error(err, "Failed to run manager")
 		os.Exit(1)
 	}
+
+	_ = gatewayv1.AddToScheme(scheme)
 }
