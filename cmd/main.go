@@ -206,5 +206,5 @@ func main() {
 		os.Exit(1)
 	}
 
-    _ = gatewayv1.AddToScheme(scheme)
+	_ = gatewayv1.AddToScheme(scheme)
 }

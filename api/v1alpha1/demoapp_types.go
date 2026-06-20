@@ -22,14 +22,14 @@ import (
 )
 
 type GatewayRef struct {
-    Name      string `json:"name"`
-    Namespace string `json:"namespace,omitempty"`
-    Port      *int32  `json:"port,omitempty"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+	Port      *int32 `json:"port,omitempty"`
 }
 
 type HTTPRouteSpec struct {
-    Hostnames []string `json:"hostnames"`
-    Path      string   `json:"path,omitempty"`
+	Hostnames []string `json:"hostnames"`
+	Path      string   `json:"path,omitempty"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -124,7 +124,7 @@ type ContainerSpec struct {
 	ReadinessProbe *ReadinessProbeSpec `json:"readinessProbe,omitempty"`
 
 	// +optional
-	Resources *ResourceSpec `json:"resources",omitempty"`
+	Resources *ResourceSpec `json:"resources,omitempty"`
 }
 
 // DemoAppSpec defines the desired state of DemoApp
@@ -140,10 +140,10 @@ type DemoAppSpec struct {
 	// Liste der Deployments
 	Deployments []DeploymentSpec `json:"deployments"`
 
-    // Gateway API integration
-    Gateway *GatewayRef `json:"gateway,omitempty"`
+	// Gateway API integration
+	Gateway *GatewayRef `json:"gateway,omitempty"`
 
-    HTTP HTTPRouteSpec `json:"http"`
+	HTTP HTTPRouteSpec `json:"http"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.
