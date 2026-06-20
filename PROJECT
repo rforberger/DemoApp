@@ -6,7 +6,7 @@ cliVersion: 4.10.1
 domain: example.com
 layout:
 - go.kubebuilder.io/v4
-projectName: testcompany
+projectName: demoapp
 repo: github.com/rforberger/demo-operator
 resources:
 - api:

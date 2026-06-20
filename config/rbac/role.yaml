@@ -5,26 +5,6 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - apps
-  resources:
-  - deployments/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
   - apps.example.com
   resources:
   - demoapps
@@ -39,27 +19,13 @@ rules:
 - apiGroups:
   - apps.example.com
   resources:
+  - demoapps/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - apps.example.com
+  resources:
   - demoapps/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - gateways
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - gateway.networking.k8s.io
-  resources:
-  - gateways/status
   verbs:
   - get
   - patch
