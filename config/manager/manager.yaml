@@ -100,3 +100,5 @@ spec:
       volumes: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: docker-io-regcred

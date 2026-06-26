@@ -7,14 +7,16 @@ import (
 )
 
 type GatewayRef struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace,omitempty"`
-	Port      *int32 `json:"port,omitempty"`
+	Name      string        `json:"name"`
+	Namespace string        `json:"namespace,omitempty"`
+	Port      *int32        `json:"port,omitempty"`
+	HTTP      HTTPRouteSpec `json:"http"`
 }
 
 type HTTPRouteSpec struct {
 	Hostnames []string `json:"hostnames"`
 	Path      string   `json:"path,omitempty"`
+	Port      *int32   `json:"port,omitempty"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -110,6 +112,8 @@ type ContainerSpec struct {
 
 	// +optional
 	Resources *ResourceSpec `json:"resources,omitempty"`
+
+	Args []string `json:"args,omitempty"`
 }
 
 // DemoAppSpec defines the desired state of DemoApp
@@ -127,8 +131,6 @@ type DemoAppSpec struct {
 
 	// Gateway API integration
 	Gateway *GatewayRef `json:"gateway,omitempty"`
-
-	HTTP HTTPRouteSpec `json:"http"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.

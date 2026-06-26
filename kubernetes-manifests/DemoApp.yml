@@ -30,6 +30,7 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
+          args: ["--text","Hello Kubernetes!"]
     - name: backend
       replicas: 1
       strategy:
@@ -43,7 +44,7 @@ spec:
           memory: "128Mi"
       containers:
         - name: backend-container
-          image: paulbouwer/hello-kubernetes:1.10
+          image: jxlwqq/http-echo:latest
           readinessProbe:
             httpGet:
               path: /

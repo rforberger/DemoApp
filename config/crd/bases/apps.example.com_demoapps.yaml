@@ -47,6 +47,10 @@ spec:
                       description: Container dieses Deployments
                       items:
                         properties:
+                          args:
+                            items:
+                              type: string
+                            type: array
                           image:
                             type: string
                           name:
@@ -180,6 +184,20 @@ spec:
               gateway:
                 description: Gateway API integration
                 properties:
+                  http:
+                    properties:
+                      hostnames:
+                        items:
+                          type: string
+                        type: array
+                      path:
+                        type: string
+                      port:
+                        format: int32
+                        type: integer
+                    required:
+                    - hostnames
+                    type: object
                   name:
                     type: string
                   namespace:
@@ -188,22 +206,11 @@ spec:
                     format: int32
                     type: integer
                 required:
+                - http
                 - name
-                type: object
-              http:
-                properties:
-                  hostnames:
-                    items:
-                      type: string
-                    type: array
-                  path:
-                    type: string
-                required:
-                - hostnames
                 type: object
             required:
             - deployments
-            - http
             type: object
           status:
             description: status defines the observed state of DemoApp

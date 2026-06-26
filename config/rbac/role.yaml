@@ -39,6 +39,12 @@ rules:
 - apiGroups:
   - apps.example.com
   resources:
+  - demoapps/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - apps.example.com
+  resources:
   - demoapps/status
   verbs:
   - get
