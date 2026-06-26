@@ -4,3 +4,6 @@
 [submodule "kubernetes-manifests/vendor/sigs.k8s.io/gateway-api"]
 	path = kubernetes-manifests/vendor/sigs.k8s.io/gateway-api
 	url = git@github.com:kubernetes-sigs/gateway-api.git
+[submodule "kubernetes-manifests/github.com/sigs.k8s.io/gateway-api"]
+	path = kubernetes-manifests/github.com/sigs.k8s.io/gateway-api
+	url = git@github.com:kubernetes-sigs/gateway-api.git
