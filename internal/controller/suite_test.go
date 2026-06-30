@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -22,6 +23,17 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	appsv1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
+	apimachineryjson "k8s.io/apimachinery/pkg/util/json"
+	"sigs.k8s.io/kustomize/api/krusty"
+	kustomize_types "sigs.k8s.io/kustomize/api/types"
+	"sigs.k8s.io/kustomize/kyaml/filesys"
+
+	//apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	//yaml "go.yaml.in/yaml/v4"
+
+	"sigs.k8s.io/kustomize/api/resource"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	//utils "github.com/rforberger/demo-operator/test/utils"
 	// +kubebuilder:scaffold:imports
 )
@@ -37,6 +49,10 @@ var (
 	k8sClient client.Client
 )
 
+func debug(str string) {
+	_, _ = fmt.Fprintf(GinkgoWriter, "warning: %v\n", str)
+}
+
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -44,6 +60,7 @@ func TestControllers(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	ctx, cancel = context.WithCancel(context.TODO())
@@ -53,14 +70,20 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
-
 	By("bootstrapping test environment")
+	paths := []string{"..", "..", "kubernetes-manifests", "github.com", "sigs.k8s.io", "gateway-api", "config", "crd"}
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "..", "config", "crd", "bases"),
-			filepath.Join("..", "..", "vendor", "sigs.k8s.io", "gateway-api", "config", "crd", "standard"),
+			//filepath.Join("..", "..", "kubernetes-manifests", "github.com", "sigs.k8s.io", "gateway-api"),
 		},
 		ErrorIfCRDPathMissing: false,
+
+		// Redirects api-server & etcd stdout/stderr directly to your terminal
+		AttachControlPlaneOutput: false,
+
+		// Load CRDs from an external path
+		// CRDs: LoadCRDS(paths),
 	}
 
 	// Retrieve the first found binary directory to allow running tests from IDEs
@@ -76,7 +99,115 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	// =========================================================================
+	// 4. THE CALL: Pass the setup context and the newly created client instance
+	// =========================================================================
+	bootstrapClusterResources(ctx, k8sClient, paths)
 })
+
+/*
+func LoadCRDS(paths []string) []*apiextensionsv1.CustomResourceDefinition {
+	kOpts := krusty.MakeDefaultOptions()
+	kOpts.PluginConfig = kustomize_types.EnabledPluginConfig(kustomize_types.BploUndefined)
+	kOpts.PluginConfig.HelmConfig.Command = "helm"
+	k := krusty.MakeKustomizer(kOpts)
+	m, err := k.Run(filesys.FileSystemOrOnDisk{}, filepath.Join(paths...))
+	Expect(err).To(Succeed())
+
+	resources := m.Resources()
+
+	crds := make([]*apiextensionsv1.CustomResourceDefinition, len(resources))
+	for i := range resources {
+		bytes, err := resources[i].MarshalJSON()
+		Expect(err).To(Succeed())
+
+		crd := &apiextensionsv1.CustomResourceDefinition{}
+		err = apimachineryjson.Unmarshal(bytes, crd)
+		Expect(err).To(Succeed())
+
+		crds[i] = crd
+	}
+
+	return crds
+}
+*/
+
+func ResourceToUnstructured(res *resource.Resource) (*unstructured.Unstructured, error) {
+	// 1. Get the resource as a map
+	resMap, err := res.Map()
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Wrap it in Unstructured — which implements client.Object
+	u := &unstructured.Unstructured{Object: resMap}
+	return u, nil
+}
+
+func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths []string) []*resource.Resource {
+	kOpts := krusty.MakeDefaultOptions()
+	kOpts.PluginConfig = kustomize_types.EnabledPluginConfig(kustomize_types.BploUndefined)
+	kOpts.PluginConfig.HelmConfig.Command = "helm"
+	k := krusty.MakeKustomizer(kOpts)
+	m, err := k.Run(filesys.FileSystemOrOnDisk{}, filepath.Join(paths...)) // type ResMap, type error
+	Expect(err).NotTo(HaveOccurred())
+
+	resources := m.Resources() // type *resource.Resource
+
+	objects := make([]*resource.Resource, len(resources))
+	for i := range resources {
+		bytes, err := resources[i].MarshalJSON()
+		Expect(err).To(Succeed())
+
+		object := &resource.Resource{}
+		err = apimachineryjson.Unmarshal(bytes, object)
+		Expect(err).To(Succeed())
+
+		objects[i] = object
+	}
+
+	return objects
+}
+
+func bootstrapClusterResources(ctx context.Context, c client.Client, paths []string) {
+	By("Bootstrapping native and custom test structures")
+
+	// --- TYPE A: Native Go Structs (For standard resources like Namespaces/ConfigMaps) ---
+	/*
+		ns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{Name: "my-test-namespace"},
+		}
+		Expect(c.Create(ctx, ns)).To(Succeed())
+	*/
+
+	/*
+		globalConfig := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "operator-settings",
+				//Namespace: "my-test-namespace",
+			},
+			Data: map[string]string{"max-workers": "10"},
+		}
+		Expect(c.Create(ctx, globalConfig)).To(Succeed())
+	*/
+
+	// --- TYPE B: Multi-Document Raw YAML manifests (For third-party integrations) ---
+	// manifestPath := filepath.Join(paths)
+	objects := applyYamlManifestFromFilepaths(ctx, c, paths)
+
+	for _, object := range objects {
+
+		//fmt.Println(object)
+		u, err := ResourceToUnstructured(object)
+		Expect(err).NotTo(HaveOccurred())
+
+		fmt.Println(u)
+		// Safely construct the object in envtest's etcd database
+		Expect(c.Create(ctx, u)).To(Succeed(), "Failed to auto-apply resource %s/%s", u.GetNamespace(), u.GetName())
+	}
+
+}
 
 ////////////
 // TESTS //
