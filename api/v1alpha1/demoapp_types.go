@@ -78,7 +78,7 @@ type DeploymentSpec struct {
 
 	// Ressourcen-Vorgaben
 	// +optional
-	Resources *ResourceSpec `json:"resources,omitempty"`
+	////Resources *ResourceSpec `json:"resources,omitempty"`
 
 	// Container dieses Deployments
 	Containers []ContainerSpec `json:"containers"`
@@ -124,7 +124,7 @@ type DemoAppSpec struct {
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 	// foo is an example field of DemoApp. Edit demoapp_types.go to remove/update
 	// +optional
-	Foo *string `json:"foo,omitempty"`
+	// Foo *string `json:"foo,omitempty"`
 
 	// Liste der Deployments
 	Deployments []DeploymentSpec `json:"deployments"`

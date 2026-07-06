@@ -23,7 +23,8 @@ import (
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	appsv1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
-	apimachineryjson "k8s.io/apimachinery/pkg/util/json"
+	//apimachineryjson "k8s.io/apimachinery/pkg/util/json"
+
 	"sigs.k8s.io/kustomize/api/krusty"
 	kustomize_types "sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
@@ -31,10 +32,14 @@ import (
 	//apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	//yaml "go.yaml.in/yaml/v4"
 
-	"sigs.k8s.io/kustomize/api/resource"
+	//"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	//"sigs.k8s.io/kustomize/api/resource"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	//utils "github.com/rforberger/demo-operator/test/utils"
+
+	//"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
+
+	testutils "github.com/rforberger/kubebuilder-libs"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -56,7 +61,7 @@ func debug(str string) {
 func TestControllers(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Controller Suite")
+	RunSpecs(t, "🟠 Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -70,7 +75,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
-	By("bootstrapping test environment")
+	By("🟠 bootstrapping test environment")
 	paths := []string{"..", "..", "kubernetes-manifests", "github.com", "sigs.k8s.io", "gateway-api", "config", "crd"}
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
@@ -93,17 +98,27 @@ var _ = BeforeSuite(func() {
 
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred(), "🔴 Starting testenv failed.")
+	Expect(cfg).NotTo(BeNil(), "🔴 Starting testenv failed.")
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred(), "🔴 Could not create k8sclient.")
+	Expect(k8sClient).NotTo(BeNil(), "🔴 Could not create k8sclient.")
+
+	// THe k8s objects
+	objects := applyYamlManifestFromFilepaths(ctx, k8sClient, paths) // []client.Object
 
 	// =========================================================================
-	// 4. THE CALL: Pass the setup context and the newly created client instance
+	// Test for application of resources, Create Kubernetes resources
 	// =========================================================================
-	bootstrapClusterResources(ctx, k8sClient, paths)
+	// WORKS
+	for _, obj := range objects {
+		fmt.Printf("🟠 Applying resource %s/%s ", obj.GetNamespace(), obj.GetName())
+
+		Expect(k8sClient.Create(ctx, obj)).NotTo(HaveOccurred(), "🔴 Failed to auto-apply resource %s/%s", obj.GetNamespace(), obj.GetName())
+
+		fmt.Printf("🟢 ok\n")
+	}
 })
 
 /*
@@ -133,80 +148,39 @@ func LoadCRDS(paths []string) []*apiextensionsv1.CustomResourceDefinition {
 }
 */
 
-func ResourceToUnstructured(res *resource.Resource) (*unstructured.Unstructured, error) {
-	// 1. Get the resource as a map
-	resMap, err := res.Map()
-	if err != nil {
-		return nil, err
-	}
-
-	// 2. Wrap it in Unstructured — which implements client.Object
-	u := &unstructured.Unstructured{Object: resMap}
-	return u, nil
-}
-
-func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths []string) []*resource.Resource {
+func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths []string) []client.Object {
 	kOpts := krusty.MakeDefaultOptions()
 	kOpts.PluginConfig = kustomize_types.EnabledPluginConfig(kustomize_types.BploUndefined)
 	kOpts.PluginConfig.HelmConfig.Command = "helm"
 	k := krusty.MakeKustomizer(kOpts)
 	m, err := k.Run(filesys.FileSystemOrOnDisk{}, filepath.Join(paths...)) // type ResMap, type error
-	Expect(err).NotTo(HaveOccurred())
+	Expect(err).NotTo(HaveOccurred(), "🔴 Could not read resources from filesystem.")
 
 	resources := m.Resources() // type *resource.Resource
 
-	objects := make([]*resource.Resource, len(resources))
-	for i := range resources {
-		bytes, err := resources[i].MarshalJSON()
-		Expect(err).To(Succeed())
+	// New objects
+	//objects := make([]*client.Object, len(resources))
 
-		object := &resource.Resource{}
-		err = apimachineryjson.Unmarshal(bytes, object)
-		Expect(err).To(Succeed())
+	objects := testutils.ResourcesToObjects(resources)
+	//for _, res := range resources {
+	//bytes, err := resources[i].MarshalJSON()
+	//Expect(err).To(Succeed())
 
-		objects[i] = object
-	}
+	//object := &resource.Resource{}
+	//err = apimachineryjson.Unmarshal(bytes, object)
+	//Expect(err).To(Succeed())
+
+	// Resource to unstructured
+	// u is the element
+	//o, err := ResourceToObject(res)
+
+	//Expect(err).NotTo(HaveOccurred())
+
+	// Append objects
+	//objects = append(objects, o)
+	//}
 
 	return objects
-}
-
-func bootstrapClusterResources(ctx context.Context, c client.Client, paths []string) {
-	By("Bootstrapping native and custom test structures")
-
-	// --- TYPE A: Native Go Structs (For standard resources like Namespaces/ConfigMaps) ---
-	/*
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{Name: "my-test-namespace"},
-		}
-		Expect(c.Create(ctx, ns)).To(Succeed())
-	*/
-
-	/*
-		globalConfig := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "operator-settings",
-				//Namespace: "my-test-namespace",
-			},
-			Data: map[string]string{"max-workers": "10"},
-		}
-		Expect(c.Create(ctx, globalConfig)).To(Succeed())
-	*/
-
-	// --- TYPE B: Multi-Document Raw YAML manifests (For third-party integrations) ---
-	// manifestPath := filepath.Join(paths)
-	objects := applyYamlManifestFromFilepaths(ctx, c, paths)
-
-	for _, object := range objects {
-
-		//fmt.Println(object)
-		u, err := ResourceToUnstructured(object)
-		Expect(err).NotTo(HaveOccurred())
-
-		fmt.Println(u)
-		// Safely construct the object in envtest's etcd database
-		Expect(c.Create(ctx, u)).To(Succeed(), "Failed to auto-apply resource %s/%s", u.GetNamespace(), u.GetName())
-	}
-
 }
 
 ////////////
@@ -214,17 +188,23 @@ func bootstrapClusterResources(ctx context.Context, c client.Client, paths []str
 ///////////
 
 // Gateway controller test
-var _ = Describe("Gateway controller", func() {
-	Context("Gateway controller test", func() {
-		It("should build the correct gateway", func() {
+var _ = Describe("🟠 Gateway controller", func() {
+	Context("🟠 Gateway controller test", func() {
+		It("🟠 should build the correct gateway", func() {
 
 			// Test for a Gateway
 			//
-
-			ctx := context.Background()
+			ctx = context.Background()
+			// EnvTest and k8sClient are now guaranteed to be ready here
 
 			desired_port := 8080
 			port := int32(desired_port)
+
+			replicas := int32(1)
+			maxsurge := int32(1)
+			maxunavailable := int32(1)
+			initialdelayseconds := int32(10)
+			periodseconds := int32(10)
 
 			// CR
 			app := &appsv1alpha1.DemoApp{
@@ -233,25 +213,63 @@ var _ = Describe("Gateway controller", func() {
 					Namespace: "default",
 				},
 				Spec: appsv1alpha1.DemoAppSpec{
-					Deployments: []appsv1alpha1.DeploymentSpec{},
+					Deployments: []appsv1alpha1.DeploymentSpec{
+						{
+							Name:     "DemoApp",
+							Replicas: &replicas,
+							Strategy: &appsv1alpha1.DeploymentStrategySpec{
+								Type: "Recreate",
+								RollingUpdate: &appsv1alpha1.RollingUpdateSpec{
+									MaxSurge:       &maxsurge,
+									MaxUnavailable: &maxunavailable,
+								},
+							},
+							Containers: []appsv1alpha1.ContainerSpec{
+								{
+									Name:  "my-test-container",
+									Image: "nginx:latest",
+									ReadinessProbe: &appsv1alpha1.ReadinessProbeSpec{
+										HTTPGet: &appsv1alpha1.HTTPGetProbeSpec{
+											Path: "/",
+											Port: port,
+										},
+										InitialDelaySeconds: &initialdelayseconds,
+										PeriodSeconds:       &periodseconds,
+									},
+									Resources: &appsv1alpha1.ResourceSpec{
+										Requests: &appsv1alpha1.ResourceValues{
+											CPU:    "100m",
+											Memory: "128Mi",
+										},
+									},
+									Args: []string{"--test", "--test"},
+								},
+							},
+						},
+					},
 					Gateway: &appsv1alpha1.GatewayRef{
-						Name: "my-gateway",
-						Port: &port,
+						Name:      "my-gateway",
+						Namespace: "default",
+						Port:      &port,
 						HTTP: appsv1alpha1.HTTPRouteSpec{
 							Hostnames: []string{},
+							Path:      "/",
+							Port:      &port,
 						},
 					},
 				},
 			}
 
+			fmt.Println(app)
+
 			// CR Test
 			reconciler_cr := &DemoAppReconciler{}
 			gw := reconciler_cr.desiredGateway(app)
 
-			Expect(gw).NotTo(BeNil())
-			Expect(gw.Name).To(Equal(app.Name + "-gateway"))
-			Expect(gw.Spec.Listeners).To(HaveLen(1))
-			Expect(gw.Spec.Listeners[0].Port).To(Equal(gatewayv1.PortNumber(desired_port)))
+			Expect(gw).NotTo(BeNil(), "🔴 Desired gateway not correct.")
+			Expect(gw.Name).To(Equal(app.Name+"-gateway"), "🔴 Desired gateway Name not correct.")
+			Expect(gw.Spec.Listeners).To(HaveLen(1), "🔴 Listeners len not correct.")
+			Expect(gw.Spec.Listeners[0].Port).To(Equal(gatewayv1.PortNumber(desired_port)), "🔴 Port number not correct.")
 
 			// K8sclient
 			Expect(k8sClient.Create(ctx, app)).To(Succeed())
@@ -264,11 +282,11 @@ var _ = Describe("Gateway controller", func() {
 			// Wait for the reconciler to do something observable
 			Eventually(func(g Gomega) {
 				updated := &appsv1alpha1.DemoApp{}
-				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), updated)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), updated)).To(Succeed(), "🔴 App key not found.")
 
 				// Expand conditions here
 				////g.Expect(updated.Status.Accepted).To(Equal(true))
-			}).Should(Succeed())
+			}).Should(Succeed(), "🔴 Overall eventual test app failed.")
 
 			//
 			// 2. Instantiate your reconciler the same way main.go or suite_test.go does
@@ -280,6 +298,9 @@ var _ = Describe("Gateway controller", func() {
 			// 3. Call the function directly
 			gateway := reconciler.desiredGateway(app)
 
+			fmt.Println(gateway)
+
+			// The test object
 			// Build gateway ObjectKey
 			key := client.ObjectKey{
 				Name:      "my-gateway-gateway",
@@ -287,11 +308,11 @@ var _ = Describe("Gateway controller", func() {
 			}
 			// Wait for the reconciler to do something observable
 			Eventually(func(g Gomega) {
-				g.Expect(k8sClient.Get(ctx, key, gateway)).To(Succeed())
+				g.Expect(k8sClient.Get(ctx, key, gateway)).To(Succeed(), "🔴 Gateway could not be found (Reconciler).")
 
 				// Expand conditions here
 				//	g.Expect(gateway.Status.Accepted).To(Equal(true))
-			}).Should(Succeed())
+			}).Should(Succeed(), "🔴 Could not get Gateway object.")
 		})
 	})
 })
@@ -300,11 +321,11 @@ var _ = Describe("Gateway controller", func() {
 // AfterSuite //
 // //////////////
 var _ = AfterSuite(func() {
-	By("tearing down the test environment")
+	By("🟠 tearing down the test environment")
 	cancel()
 	Eventually(func() error {
 		return testEnv.Stop()
-	}, time.Minute, time.Second).Should(Succeed())
+	}, time.Minute, time.Second).Should(Succeed(), "🔴 Test env could not be stopped.")
 })
 
 // getFirstFoundEnvTestBinaryDir locates the first binary in the specified path.
