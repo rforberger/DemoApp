@@ -61,7 +61,7 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.69.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
-	github.com/rforberger/kubebuilder-libs v0.0.0-20260706140445-1ffb11060c4f // indirect
+	github.com/rforberger/kubebuilder-libs v0.0.0-20260706141117-abe291ac2f6a // indirect
 	github.com/rmohr/gomega v1.2.0 // indirect
 	github.com/spf13/cobra v1.10.2 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

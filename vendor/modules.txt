@@ -232,7 +232,7 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/rforberger/kubebuilder-libs v0.0.0-20260706140445-1ffb11060c4f
+# github.com/rforberger/kubebuilder-libs v0.0.0-20260706141117-abe291ac2f6a
 ## explicit; go 1.26.4
 github.com/rforberger/kubebuilder-libs/debug
 github.com/rforberger/kubebuilder-libs/testutils

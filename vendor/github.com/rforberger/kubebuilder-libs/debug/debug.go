@@ -3,6 +3,7 @@ package debug
 import (
     "encoding/json"
     "fmt"
+    . "github.com/onsi/ginkgo/v2"
 )
 
 // 1. Define a struct using a Generic Type Parameter [T]
@@ -26,7 +27,7 @@ func (p *Processor[T]) Debug_App() {
     if err != nil {
         fmt.Println("error:", err)
     }
-
-	fmt.Printf("ID: %s, Debug: %v\n", p.Identifier, string(b))
+    _, _ = fmt.Fprintf(GinkgoWriter, "ID: %s, Debug: %v\n", p.Identifier, string(b))
+	//fmt.Printf("ID: %s, Debug: %v\n", p.Identifier, string(b))
 }
 
