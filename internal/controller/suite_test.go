@@ -39,7 +39,8 @@ import (
 
 	//"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	testutils "github.com/rforberger/kubebuilder-libs"
+	debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
+	testutils "github.com/rforberger/kubebuilder-libs/testutils"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -251,8 +252,8 @@ var _ = Describe("🟠 Gateway controller", func() {
 						Name:      "my-gateway",
 						Namespace: "default",
 						Port:      &port,
-						HTTP: appsv1alpha1.HTTPRouteSpec{
-							Hostnames: []string{},
+						HTTP: &appsv1alpha1.HTTPRouteSpec{
+							Hostnames: []string{"demoapp.ronnyforberger.de"},
 							Path:      "/",
 							Port:      &port,
 						},
@@ -260,7 +261,11 @@ var _ = Describe("🟠 Gateway controller", func() {
 				},
 			}
 
-			fmt.Println(app)
+			// Debug
+			// Pass the string and the pointer directly.
+			// Go automatically infers that [T] is *appsv1alpha.DemoApp
+			proc := debug_pkg.NewProcessor("demo-string", app)
+			proc.Debug_App()
 
 			// CR Test
 			reconciler_cr := &DemoAppReconciler{}

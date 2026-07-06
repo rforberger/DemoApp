@@ -7,10 +7,10 @@ import (
 )
 
 type GatewayRef struct {
-	Name      string        `json:"name"`
-	Namespace string        `json:"namespace,omitempty"`
-	Port      *int32        `json:"port,omitempty"`
-	HTTP      HTTPRouteSpec `json:"http"`
+	Name      string         `json:"name"`
+	Namespace string         `json:"namespace,omitempty"`
+	Port      *int32         `json:"port,omitempty"`
+	HTTP      *HTTPRouteSpec `json:"http"`
 }
 
 type HTTPRouteSpec struct {
