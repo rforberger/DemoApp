@@ -309,6 +309,7 @@ var _ = Describe("🟠 Gateway controller", func() {
 				Scheme: k8sClient.Scheme(),
 			}
 
+			// This resource should be reconciled
 			req := ctrl.Request{
 				NamespacedName: types.NamespacedName{
 					Name:      "test-resource",

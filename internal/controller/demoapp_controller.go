@@ -191,17 +191,14 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// If Gateway object is not found, CR
 	if apierrors.IsNotFound(err) {
 		gw = *r.desiredGateway(&demoApp)
+		// create Gateway
+		ctrl_handle, _, err_gateway := r.createGateway(ctx, &demoApp, &gw)
+		if err_gateway != nil {
+			logger.Error(err_gateway, "Could not create Gateway")
+			return ctrl_handle, err_gateway
+		}
 	}
 
-	// create Gateway
-	ctrl_handle, gateway, err_gateway := r.createGateway(ctx, &demoApp, &gw)
-	if err_gateway != nil {
-		logger.Error(err_gateway, "Could not create Gateway")
-		return ctrl_handle, err_gateway
-	}
-
-
-	//print(gateway)
 	// Desired HTTP HTTPRoute
 
 	/*
