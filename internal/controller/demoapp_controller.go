@@ -118,7 +118,6 @@ func toHostnames(h []string) []gatewayv1.Hostname {
 	}
 */
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
-
 	return &gatewayv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      app.Name + "-gateway",
@@ -145,15 +144,30 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 	}
 }
 
+func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1alpha1.DemoApp, gw *gatewayv1.Gateway) (ctrl.Result, *gatewayv1.Gateway, error) {
+	var err error
+	if err := ctrl.SetControllerReference(demoApp, gw, r.Scheme); err != nil {
+		return ctrl.Result{}, gw, err
+	}
+
+	// Create the Gateway
+	if err := r.Create(ctx, gw); err != nil {
+		return ctrl.Result{}, gw, err
+	}
+	return ctrl.Result{}, gw, err
+}
+
 func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	// WORKS
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {
 		logger.Error(err, "unable to fetch DemoApp")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	// WORKS
 	// Deployment
 	for _, d := range demoApp.Spec.Deployments {
 		deploy := buildDeployment(d, demoApp.Namespace)
@@ -174,19 +188,20 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		&gw,
 	)
 
-	// If Gateway object is not found
+	// If Gateway object is not found, CR
 	if apierrors.IsNotFound(err) {
 		gw = *r.desiredGateway(&demoApp)
-
-		if err := ctrl.SetControllerReference(&demoApp, &gw, r.Scheme); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.Create(ctx, &gw); err != nil {
-			return ctrl.Result{}, err
-		}
 	}
 
+	// create Gateway
+	ctrl_handle, gateway, err_gateway := r.createGateway(ctx, &demoApp, &gw)
+	if err_gateway != nil {
+		logger.Error(err_gateway, "Could not create Gateway")
+		return ctrl_handle, err_gateway
+	}
+
+
+	//print(gateway)
 	// Desired HTTP HTTPRoute
 
 	/*

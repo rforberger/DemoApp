@@ -13,7 +13,7 @@ import (
 	//corev1 "k8s.io/api/core/v1"
 	//errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	//types "k8s.io/apimachinery/pkg/types"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,8 +39,10 @@ import (
 
 	//"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
+	//debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
 	testutils "github.com/rforberger/kubebuilder-libs/testutils"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -184,6 +186,10 @@ func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths 
 	return objects
 }
 
+//func verifyResource(ctx context.Context) (bool, error) {
+
+//}
+
 ////////////
 // TESTS //
 ///////////
@@ -216,10 +222,10 @@ var _ = Describe("🟠 Gateway controller", func() {
 				Spec: appsv1alpha1.DemoAppSpec{
 					Deployments: []appsv1alpha1.DeploymentSpec{
 						{
-							Name:     "DemoApp",
+							Name:     "demoapp",
 							Replicas: &replicas,
 							Strategy: &appsv1alpha1.DeploymentStrategySpec{
-								Type: "Recreate",
+								Type: "RollingUpdate",
 								RollingUpdate: &appsv1alpha1.RollingUpdateSpec{
 									MaxSurge:       &maxsurge,
 									MaxUnavailable: &maxunavailable,
@@ -264,12 +270,15 @@ var _ = Describe("🟠 Gateway controller", func() {
 			// Debug
 			// Pass the string and the pointer directly.
 			// Go automatically infers that [T] is *appsv1alpha.DemoApp
-			proc := debug_pkg.NewProcessor("demo-string", app)
-			proc.Debug_App()
+			//proc := debug_pkg.NewProcessor("demo-string", app)
+			//proc.Debug_App()
 
 			// CR Test
 			reconciler_cr := &DemoAppReconciler{}
 			gw := reconciler_cr.desiredGateway(app)
+
+			//proc_gw := debug_pkg.NewProcessor("demo-string", gw)
+			//proc_gw.Debug_App()
 
 			Expect(gw).NotTo(BeNil(), "🔴 Desired gateway not correct.")
 			Expect(gw.Name).To(Equal(app.Name+"-gateway"), "🔴 Desired gateway Name not correct.")
@@ -300,24 +309,47 @@ var _ = Describe("🟠 Gateway controller", func() {
 				Scheme: k8sClient.Scheme(),
 			}
 
-			// 3. Call the function directly
-			gateway := reconciler.desiredGateway(app)
+			req := ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "test-resource",
+					Namespace: "default",
+				},
+			}
 
-			fmt.Println(gateway)
+			// Reconcile
+			Eventually(func(g Gomega) {
+				_, err := reconciler.Reconcile(ctx, req)
+				g.Expect(err).NotTo(HaveOccurred(), "🔴 Reconcile failed.")
+			}).Should(Succeed())
+
+			//proc_gateway := debug_pkg.NewProcessor("demo-string", gateway)
+			//proc_gateway.Debug_App()
 
 			// The test object
 			// Build gateway ObjectKey
-			key := client.ObjectKey{
-				Name:      "my-gateway-gateway",
-				Namespace: "default",
-			}
-			// Wait for the reconciler to do something observable
-			Eventually(func(g Gomega) {
-				g.Expect(k8sClient.Get(ctx, key, gateway)).To(Succeed(), "🔴 Gateway could not be found (Reconciler).")
 
-				// Expand conditions here
-				//	g.Expect(gateway.Status.Accepted).To(Equal(true))
-			}).Should(Succeed(), "🔴 Could not get Gateway object.")
+			/*
+				key := client.ObjectKey{
+					Name:      "test-resource-gateway",
+					Namespace: "default",
+				}
+
+				fetchedObj2 := &gatewayv1.Gateway{}
+				k8sClient.Get(ctx, key, fetchedObj2)
+
+				proc_fetchedobj2 := debug_pkg.NewProcessor("demo-string", fetchedObj2)
+				proc_fetchedobj2.Debug_App()
+
+				// Wait for the reconciler to do something observable
+				fetchedObj := &gatewayv1.Gateway{}
+				Eventually(func(g Gomega) {
+					g.Expect(k8sClient.Get(ctx, key, fetchedObj)).To(Succeed(), "🔴 Gateway could not be found (Reconciler).")
+
+					// Expand conditions here
+					//	g.Expect(gateway.Status.Accepted).To(Equal(true))
+				}).Should(Succeed(), "🔴 Could not get Gateway object.")
+			*/
+
 		})
 	})
 })
