@@ -28,3 +28,7 @@ go.work
 
 # Kubeconfig might contain secrets
 *.kubeconfig
+
+# The SSH dir
+id_ed25519_demoapp
+id_ed25519_demoapp.pub

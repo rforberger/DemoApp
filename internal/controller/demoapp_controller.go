@@ -160,6 +160,8 @@ func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1al
 func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
+	logger.Info("Reconcile loop starts.")
+
 	// WORKS
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {

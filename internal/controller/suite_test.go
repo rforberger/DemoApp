@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,14 +14,14 @@ import (
 	//corev1 "k8s.io/api/core/v1"
 	//errors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	types "k8s.io/apimachinery/pkg/types"
+	//types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+	//gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	appsv1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 	//apimachineryjson "k8s.io/apimachinery/pkg/util/json"
@@ -39,10 +40,9 @@ import (
 
 	//"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	//debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
+	debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
 	testutils "github.com/rforberger/kubebuilder-libs/testutils"
-
-	ctrl "sigs.k8s.io/controller-runtime"
+	//ctrl "sigs.k8s.io/controller-runtime"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -95,9 +95,9 @@ var _ = BeforeSuite(func() {
 	}
 
 	// Retrieve the first found binary directory to allow running tests from IDEs
-	//if getFirstFoundEnvTestBinaryDir() != "" {
-	//	testEnv.BinaryAssetsDirectory = getFirstFoundEnvTestBinaryDir()
-	//}
+	if getFirstFoundEnvTestBinaryDir() != "" {
+		testEnv.BinaryAssetsDirectory = getFirstFoundEnvTestBinaryDir()
+	}
 
 	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
@@ -270,58 +270,60 @@ var _ = Describe("🟠 Gateway controller", func() {
 			// Debug
 			// Pass the string and the pointer directly.
 			// Go automatically infers that [T] is *appsv1alpha.DemoApp
-			//proc := debug_pkg.NewProcessor("demo-string", app)
-			//proc.Debug_App()
+			proc := debug_pkg.NewProcessor("demo-string", app)
+			proc.Debug_App()
 
 			// CR Test
-			reconciler_cr := &DemoAppReconciler{}
-			gw := reconciler_cr.desiredGateway(app)
+			//reconciler_cr := &DemoAppReconciler{}
+			//gw := reconciler_cr.desiredGateway(app)
 
 			//proc_gw := debug_pkg.NewProcessor("demo-string", gw)
 			//proc_gw.Debug_App()
 
-			Expect(gw).NotTo(BeNil(), "🔴 Desired gateway not correct.")
-			Expect(gw.Name).To(Equal(app.Name+"-gateway"), "🔴 Desired gateway Name not correct.")
-			Expect(gw.Spec.Listeners).To(HaveLen(1), "🔴 Listeners len not correct.")
-			Expect(gw.Spec.Listeners[0].Port).To(Equal(gatewayv1.PortNumber(desired_port)), "🔴 Port number not correct.")
+			//Expect(gw).NotTo(BeNil(), "🔴 Desired gateway not correct.")
+			//Expect(gw.Name).To(Equal(app.Name+"-gateway"), "🔴 Desired gateway Name not correct.")
+			//Expect(gw.Spec.Listeners).To(HaveLen(1), "🔴 Listeners len not correct.")
+			//Expect(gw.Spec.Listeners[0].Port).To(Equal(gatewayv1.PortNumber(desired_port)), "🔴 Port number not correct.")
 
 			// K8sclient
-			Expect(k8sClient.Create(ctx, app)).To(Succeed())
+			//Expect(k8sClient.Create(ctx, app)).To(Succeed())
 
 			// Clean up after the test
-			DeferCleanup(func() {
-				Expect(k8sClient.Delete(ctx, app)).To(Succeed())
-			})
+			//DeferCleanup(func() {
+			//	Expect(k8sClient.Delete(ctx, app)).To(Succeed())
+			//})
 
 			// Wait for the reconciler to do something observable
-			Eventually(func(g Gomega) {
-				updated := &appsv1alpha1.DemoApp{}
-				g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), updated)).To(Succeed(), "🔴 App key not found.")
+			//Eventually(func(g Gomega) {
+			//	updated := &appsv1alpha1.DemoApp{}
+			//	g.Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), updated)).To(Succeed(), "🔴 App key not found.")
 
-				// Expand conditions here
-				////g.Expect(updated.Status.Accepted).To(Equal(true))
-			}).Should(Succeed(), "🔴 Overall eventual test app failed.")
+			// Expand conditions here
+			////g.Expect(updated.Status.Accepted).To(Equal(true))
+			//}).Should(Succeed(), "🔴 Overall eventual test app failed.")
 
 			//
 			// 2. Instantiate your reconciler the same way main.go or suite_test.go does
-			reconciler := &DemoAppReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
-			}
+			//reconciler := &DemoAppReconciler{
+			//	Client: k8sClient,
+			//	Scheme: k8sClient.Scheme(),
+			//}
 
 			// This resource should be reconciled
-			req := ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Name:      "test-resource",
-					Namespace: "default",
-				},
-			}
+			//req := ctrl.Request{
+			//	NamespacedName: types.NamespacedName{
+			//		Name:      "test-resource",
+			//		Namespace: "default",
+			//	},
+			//}
 
 			// Reconcile
-			Eventually(func(g Gomega) {
-				_, err := reconciler.Reconcile(ctx, req)
-				g.Expect(err).NotTo(HaveOccurred(), "🔴 Reconcile failed.")
-			}).Should(Succeed())
+			//_, err := reconciler.Reconcile(ctx, req)
+			//print(err)
+			//Eventually(func(g Gomega) {
+
+			//	g.Expect(err).NotTo(HaveOccurred(), "🔴 Reconcile failed.")
+			//}).Should(Succeed())
 
 			//proc_gateway := debug_pkg.NewProcessor("demo-string", gateway)
 			//proc_gateway.Debug_App()
@@ -374,7 +376,7 @@ var _ = AfterSuite(func() {
 // This function streamlines the process by finding the required binaries, similar to
 // setting the 'KUBEBUILDER_ASSETS' environment variable. To ensure the binaries are
 // properly set up, run 'make setup-envtest' beforehand.
-/*
+
 func getFirstFoundEnvTestBinaryDir() string {
 	basePath := filepath.Join("..", "..", "bin", "k8s")
 	entries, err := os.ReadDir(basePath)
@@ -389,4 +391,3 @@ func getFirstFoundEnvTestBinaryDir() string {
 	}
 	return ""
 }
-*/

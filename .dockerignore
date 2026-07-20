@@ -9,3 +9,6 @@
 # Re-include Go module files
 !go.mod
 !go.sum
+
+!id_ed25519_demoapp
+!id_ed25519_demoapp.pub
