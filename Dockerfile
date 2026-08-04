@@ -16,7 +16,7 @@ ENV GOPROXY=direct
 #RUN --mount=type=secret,id=gh_token echo "password $(cat /run/secrets/gh_token)" >> ~/.netrc
 #RUN --mount=type=secret,id=gh_token git config --global url."https://rforberger:$(cat /run/secrets/gh_token)@github.com/".insteadOf "https://github.com/"
 RUN git config --global url."git@github.com:".insteadOf "https://github.com/"
-ENV GOPRIVATE=github.com/rforberger/*
+ENV GOPRIVATE="github.com/rforberger/* gopkg.in/*"
 
 # SSH host key configuration
 RUN mkdir ~/.ssh
