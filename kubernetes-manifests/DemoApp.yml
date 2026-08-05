@@ -4,7 +4,7 @@ metadata:
   name: my-demoapp
   namespace: default
 spec:
-  foo: "example-foo-value"
+  foo: "Testvalue"
   deployments:
     - name: frontend
       replicas: 2
@@ -30,7 +30,6 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
-          args: ["--text","Hello Kubernetes!"]
     - name: backend
       replicas: 1
       strategy:
@@ -52,6 +51,7 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 15
+          args: ["--text","Hello Kubernetes!"]
   gateway:
     name: public-gateway
     namespace: networking
