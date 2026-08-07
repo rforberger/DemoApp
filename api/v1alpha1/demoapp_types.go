@@ -9,14 +9,14 @@ import (
 type GatewayRef struct {
 	Name      string         `json:"name"`
 	Namespace string         `json:"namespace,omitempty"`
-	Port      *int32         `json:"port,omitempty"`
+	Port      int32          `json:"port,omitempty"`
 	HTTP      *HTTPRouteSpec `json:"http"`
 }
 
 type HTTPRouteSpec struct {
 	Hostnames []string `json:"hostnames"`
 	Path      string   `json:"path,omitempty"`
-	Port      *int32   `json:"port,omitempty"`
+	Port      int32    `json:"port,omitempty"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!

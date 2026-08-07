@@ -22,6 +22,7 @@ import (
 
 	demov1alpha1 "github.com/rforberger/demo-operator/api/v1alpha1"
 	gatewayv1 "sigs.k8s.io/gateway-api/apis/v1"
+
 	//gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -128,7 +129,7 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 			Listeners: []gatewayv1.Listener{
 				{
 					Name:     gatewayv1.SectionName(app.Spec.Gateway.Name),
-					Port:     *app.Spec.Gateway.Port,
+					Port:     gatewayv1.PortNumber(app.Spec.Gateway.Port),
 					Protocol: gatewayv1.HTTPProtocolType,
 					AllowedRoutes: &gatewayv1.AllowedRoutes{
 						Namespaces: &gatewayv1.RouteNamespaces{
@@ -157,6 +158,16 @@ func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1al
 	return ctrl.Result{}, gw, err
 }
 
+func (r *DemoAppReconciler) checkDeployment(ctx context.Context, req ctrl.Request, deployment_name string) (error) {
+       deployment := &appsv1.Deployment{}
+       err := r.Get(ctx, client.ObjectKey{
+            Name:      deployment_name,
+            Namespace: req.Namespace,
+       }, deployment)
+
+      return err
+}
+
 func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
@@ -166,19 +177,22 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {
 		logger.Error(err, "unable to fetch DemoApp")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		//return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-
 	// WORKS
 	// Deployment
-	for _, d := range demoApp.Spec.Deployments {
-		deploy := buildDeployment(d, demoApp.Namespace)
-		if err := r.Client.Create(ctx, deploy); err != nil {
-			logger.Error(err, "failed to create deployment", "deployment", d.Name)
-			continue
-		}
-		logger.Info("Deployment created", "deployment", d.Name)
-	}
+    for _, d := range demoApp.Spec.Deployments {
+        if err := r.checkDeployment(ctx, req, d.Name); err != nil {
+            logger.Info("Deployment doesn't exist")
+            //deploy := buildDeployment(d, demoApp.Namespace)
+            //if err := r.Client.Create(ctx, deploy); err != nil {
+            //    logger.Error(err, "failed to create deployment", "deployment", d.Name)
+            //    continue
+            //}
+            //logger.Info("Deployment created", "deployment", d.Name)
+        }
+    }
+
 
 	// Gateway API
 	var gw gatewayv1.Gateway

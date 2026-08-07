@@ -40,8 +40,8 @@ import (
 
 	//"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 
-	debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
-	testutils "github.com/rforberger/kubebuilder-libs/testutils"
+	//debug_pkg "github.com/rforberger/kubebuilder-libs/debug"
+	//testutils "github.com/rforberger/kubebuilder-libs/testutils"
 	//ctrl "sigs.k8s.io/controller-runtime"
 	// +kubebuilder:scaffold:imports
 )
@@ -66,7 +66,7 @@ func TestControllers(t *testing.T) {
 
 	RunSpecs(t, "🟠 Controller Suite")
 }
-
+/*
 var _ = BeforeSuite(func() {
 
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
@@ -123,7 +123,7 @@ var _ = BeforeSuite(func() {
 		fmt.Printf("🟢 ok\n")
 	}
 })
-
+*/
 /*
 func LoadCRDS(paths []string) []*apiextensionsv1.CustomResourceDefinition {
 	kOpts := krusty.MakeDefaultOptions()
@@ -150,7 +150,7 @@ func LoadCRDS(paths []string) []*apiextensionsv1.CustomResourceDefinition {
 	return crds
 }
 */
-
+/*
 func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths []string) []client.Object {
 	kOpts := krusty.MakeDefaultOptions()
 	kOpts.PluginConfig = kustomize_types.EnabledPluginConfig(kustomize_types.BploUndefined)
@@ -185,6 +185,7 @@ func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths 
 
 	return objects
 }
+*/
 
 //func verifyResource(ctx context.Context) (bool, error) {
 
@@ -193,6 +194,7 @@ func applyYamlManifestFromFilepaths(ctx context.Context, c client.Client, paths 
 ////////////
 // TESTS //
 ///////////
+
 
 // Gateway controller test
 var _ = Describe("🟠 Gateway controller", func() {
@@ -352,10 +354,10 @@ var _ = Describe("🟠 Gateway controller", func() {
 					//	g.Expect(gateway.Status.Accepted).To(Equal(true))
 				}).Should(Succeed(), "🔴 Could not get Gateway object.")
 			*/
-
 		})
 	})
 })
+
 
 // ///////////////
 // AfterSuite //
