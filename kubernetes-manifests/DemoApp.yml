@@ -55,6 +55,7 @@ spec:
   gateway:
     name: public-gateway
     namespace: networking
+    port: 80
     http:
       hostnames:
         - demo.example.com

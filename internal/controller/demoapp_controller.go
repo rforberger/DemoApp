@@ -118,6 +118,7 @@ func toHostnames(h []string) []gatewayv1.Hostname {
 		}
 	}
 */
+
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -129,7 +130,7 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 			Listeners: []gatewayv1.Listener{
 				{
 					Name:     gatewayv1.SectionName(app.Spec.Gateway.Name),
-					Port:     gatewayv1.PortNumber(app.Spec.Gateway.Port),
+                    Port:     gatewayv1.PortNumber(app.Spec.Gateway.Port),
 					Protocol: gatewayv1.HTTPProtocolType,
 					AllowedRoutes: &gatewayv1.AllowedRoutes{
 						Namespaces: &gatewayv1.RouteNamespaces{
@@ -144,6 +145,7 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 		},
 	}
 }
+
 
 func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1alpha1.DemoApp, gw *gatewayv1.Gateway) (ctrl.Result, *gatewayv1.Gateway, error) {
 	var err error
@@ -184,17 +186,16 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
     for _, d := range demoApp.Spec.Deployments {
         if err := r.checkDeployment(ctx, req, d.Name); err != nil {
             logger.Info("Deployment doesn't exist")
-            //deploy := buildDeployment(d, demoApp.Namespace)
-            //if err := r.Client.Create(ctx, deploy); err != nil {
-            //    logger.Error(err, "failed to create deployment", "deployment", d.Name)
-            //    continue
-            //}
-            //logger.Info("Deployment created", "deployment", d.Name)
+            deploy := buildDeployment(d, demoApp.Namespace)
+            if err := r.Client.Create(ctx, deploy); err != nil {
+                logger.Error(err, "failed to create deployment", "deployment", d.Name)
+                continue
+            }
+            logger.Info("Deployment created", "deployment", d.Name)
         }
     }
 
-
-	// Gateway API
+// Gateway API
 	var gw gatewayv1.Gateway
 	err := r.Get(ctx,
 		client.ObjectKey{
@@ -203,6 +204,7 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		},
 		&gw,
 	)
+
 
 	// If Gateway object is not found, CR
 	if apierrors.IsNotFound(err) {
@@ -348,6 +350,7 @@ func buildResources(r *demov1alpha1.ResourceSpec) corev1.ResourceRequirements {
 	}
 	return res
 }
+
 
 func buildReadinessProbe(p *demov1alpha1.ReadinessProbeSpec) *corev1.Probe {
 	if p == nil || p.HTTPGet == nil {
