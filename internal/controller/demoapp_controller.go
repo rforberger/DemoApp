@@ -179,14 +179,14 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {
 		logger.Error(err, "unable to fetch DemoApp")
-		//return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 	// WORKS
 	// Deployment
     for _, d := range demoApp.Spec.Deployments {
         if err := r.checkDeployment(ctx, req, d.Name); err != nil {
             logger.Info("Deployment doesn't exist")
-            deploy := buildDeployment(d, demoApp.Namespace)
+            deploy := r.buildDeployment(d, demoApp.Namespace, &demoApp)
             if err := r.Client.Create(ctx, deploy); err != nil {
                 logger.Error(err, "failed to create deployment", "deployment", d.Name)
                 continue
@@ -196,6 +196,15 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
     }
 
 // Gateway API
+	// test for demoApp
+	err_demoapp := r.Get(ctx,
+	    client.ObjectKey{
+	        Name: demoApp.Name,
+	        Namespace: demoApp.Namespace,
+	    },
+        &demoApp,
+    )
+
 	var gw gatewayv1.Gateway
 	err := r.Get(ctx,
 		client.ObjectKey{
@@ -205,9 +214,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		&gw,
 	)
 
-
-	// If Gateway object is not found, CR
-	if apierrors.IsNotFound(err) {
+  	// If Gateway object is not found, CR
+	if apierrors.IsNotFound(err) && !apierrors.IsNotFound(err_demoapp) {
 		gw = *r.desiredGateway(&demoApp)
 		// create Gateway
 		ctrl_handle, _, err_gateway := r.createGateway(ctx, &demoApp, &gw)
@@ -251,7 +259,7 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	return ctrl.Result{}, nil
 }
 
-func buildDeployment(d demov1alpha1.DeploymentSpec, namespace string) *appsv1.Deployment {
+func (r *DemoAppReconciler) buildDeployment(d demov1alpha1.DeploymentSpec, namespace string, demoApp *demov1alpha1.DemoApp) *appsv1.Deployment {
 	replicas := int32(1)
 	if d.Replicas != nil {
 		replicas = *d.Replicas
@@ -284,6 +292,11 @@ func buildDeployment(d demov1alpha1.DeploymentSpec, namespace string) *appsv1.De
 			},
 		},
 	}
+
+    // OwnerReference
+    if err := ctrl.SetControllerReference(demoApp, deploy, r.Scheme); err != nil {
+    	return nil
+    }
 
 	// Deployment Strategy
 	if d.Strategy != nil && d.Strategy.Type != "" {
