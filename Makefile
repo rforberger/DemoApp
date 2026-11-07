@@ -110,7 +110,7 @@ lint-config: golangci-lint ## Verify golangci-lint linter configuration
 
 .PHONY: build
 build: manifests generate fmt vet ## Build manager binary.
-	go build -o bin/manager cmd/main.go
+	env GOARCH="arm64" go build -o bin/manager cmd/main.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
@@ -121,7 +121,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 # More info: https://docs.docker.com/develop/develop-images/build_enhancements/
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	DOCKER_BUILDKIT=1 $(CONTAINER_TOOL) build --secret id=gh_token,env=GH_TOKEN -t ${IMG} .
+	DOCKER_BUILDKIT=1 $(CONTAINER_TOOL) build --build-arg TARGETARCH=arm64 --secret id=gh_token,env=GH_TOKEN -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.

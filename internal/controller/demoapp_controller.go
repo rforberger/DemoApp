@@ -26,11 +26,14 @@ import (
 	//gatewayv1beta1 "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	/*
-	   types "k8s.io/apimachinery/pkg/types"
 
+	types "k8s.io/apimachinery/pkg/types"
+	/*
 	   controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	*/)
+	*/
+
+	"k8s.io/utils/ptr"
+)
 
 // DemoAppReconciler reconciles a DemoApp object
 type DemoAppReconciler struct {
@@ -41,6 +44,7 @@ type DemoAppReconciler struct {
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/finalizers,verbs=update
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -60,64 +64,64 @@ func toHostnames(h []string) []gatewayv1.Hostname {
 	return out
 }
 
-/*
-	func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gatewayv1.HTTPRoute {
-		gwNS := app.Spec.Gateway.Namespace
-		if gwNS == "" {
-			gwNS = app.Namespace
-		}
-
-		//pathType := gatewayv1beta1.PathMatchPathPrefix
-		pathType := gatewayv1.PathMatchType("PathPrefix")
-		pathValue := "/"
-		if app.Spec.Gateway.HTTP.Path != "" {
-			pathValue = app.Spec.Gateway.HTTP.Path
-		}
-
-		return &gatewayv1.HTTPRoute{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      app.Name,
-				Namespace: app.Namespace,
-				Labels: map[string]string{
-					"app": app.Name,
-				},
-			},
-			Spec: gatewayv1.HTTPRouteSpec{
-				CommonRouteSpec: gatewayv1.CommonRouteSpec{
-					ParentRefs: []gatewayv1.ParentReference{
-						{
-							Name:      gatewayv1.ObjectName(app.Spec.Gateway.Name),
-							Namespace: (*gatewayv1.Namespace)(&gwNS),
-						},
-					},
-				},
-				Hostnames: toHostnames(app.Spec.Gateway.HTTP.Hostnames),
-				Rules: []gatewayv1.HTTPRouteRule{
-					{
-						Matches: []gatewayv1.HTTPRouteMatch{
-							{
-								Path: &gatewayv1.HTTPPathMatch{
-									Type:  &pathType,
-									Value: &pathValue,
-								},
-							},
-						},
-						BackendRefs: []gatewayv1.HTTPBackendRef{
-							{
-								BackendRef: gatewayv1.BackendRef{
-									BackendObjectReference: gatewayv1.BackendObjectReference{
-										Name: gatewayv1.ObjectName(app.Name),
-										Port: app.Spec.Gateway.Port,
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}
+// RBAC TODO for User \"system:serviceaccount:testcompany-system:testcompany-controller-manager\" cannot list resource \"httproutes\" in API group \"gateway.networking.k8s.io\" at the cluster scope"}
+func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gatewayv1.HTTPRoute {
+	gwNS := app.Spec.Gateway.Namespace
+	if gwNS == "" {
+		gwNS = app.Namespace
 	}
-*/
+
+	//pathType := gatewayv1beta1.PathMatchPathPrefix
+	pathType := gatewayv1.PathMatchType("PathPrefix")
+	pathValue := "/"
+	if app.Spec.Gateway.HTTP.Path != "" {
+		pathValue = app.Spec.Gateway.HTTP.Path
+	}
+
+	return &gatewayv1.HTTPRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      app.Name,
+			Namespace: app.Namespace,
+			Labels: map[string]string{
+				"app": app.Name,
+			},
+		},
+		Spec: gatewayv1.HTTPRouteSpec{
+			CommonRouteSpec: gatewayv1.CommonRouteSpec{
+				ParentRefs: []gatewayv1.ParentReference{
+					{
+						Name:      gatewayv1.ObjectName(app.Spec.Gateway.Name),
+						Namespace: (*gatewayv1.Namespace)(&gwNS),
+					},
+				},
+			},
+			Hostnames: toHostnames(app.Spec.Gateway.HTTP.Hostnames),
+			Rules: []gatewayv1.HTTPRouteRule{
+				{
+					Matches: []gatewayv1.HTTPRouteMatch{
+						{
+							Path: &gatewayv1.HTTPPathMatch{
+								Type:  &pathType,
+								Value: &pathValue,
+							},
+						},
+					},
+					BackendRefs: []gatewayv1.HTTPBackendRef{
+						{
+							BackendRef: gatewayv1.BackendRef{
+								BackendObjectReference: gatewayv1.BackendObjectReference{
+									Name: gatewayv1.ObjectName(app.Name),
+									// Das hab ich geändert, PortNumber muss stehen
+									Port: ptr.To(gatewayv1.PortNumber(app.Spec.Gateway.Port)),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
@@ -130,7 +134,7 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 			Listeners: []gatewayv1.Listener{
 				{
 					Name:     gatewayv1.SectionName(app.Spec.Gateway.Name),
-                    Port:     gatewayv1.PortNumber(app.Spec.Gateway.Port),
+					Port:     gatewayv1.PortNumber(app.Spec.Gateway.Port),
 					Protocol: gatewayv1.HTTPProtocolType,
 					AllowedRoutes: &gatewayv1.AllowedRoutes{
 						Namespaces: &gatewayv1.RouteNamespaces{
@@ -146,7 +150,6 @@ func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1
 	}
 }
 
-
 func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1alpha1.DemoApp, gw *gatewayv1.Gateway) (ctrl.Result, *gatewayv1.Gateway, error) {
 	var err error
 	if err := ctrl.SetControllerReference(demoApp, gw, r.Scheme); err != nil {
@@ -160,17 +163,19 @@ func (r *DemoAppReconciler) createGateway(ctx context.Context, demoApp *demov1al
 	return ctrl.Result{}, gw, err
 }
 
-func (r *DemoAppReconciler) checkDeployment(ctx context.Context, req ctrl.Request, deployment_name string) (error) {
-       deployment := &appsv1.Deployment{}
-       err := r.Get(ctx, client.ObjectKey{
-            Name:      deployment_name,
-            Namespace: req.Namespace,
-       }, deployment)
+func (r *DemoAppReconciler) checkDeployment(ctx context.Context, req ctrl.Request, deployment_name string) error {
+	deployment := &appsv1.Deployment{}
+	err := r.Get(ctx, client.ObjectKey{
+		Name:      deployment_name,
+		Namespace: req.Namespace,
+	}, deployment)
 
-      return err
+	return err
 }
 
 func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// TYPE WORKS
+
 	logger := log.FromContext(ctx)
 
 	logger.Info("Reconcile loop starts.")
@@ -178,35 +183,41 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// WORKS
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {
-		logger.Error(err, "unable to fetch DemoApp")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		NotFound := client.IgnoreNotFound(err)
+		if NotFound != nil {
+			logger.Error(err, "unable to fetch DemoApp")
+			return ctrl.Result{}, NotFound
+		}
 	}
 	// WORKS
 	// Deployment
-    for _, d := range demoApp.Spec.Deployments {
-        if err := r.checkDeployment(ctx, req, d.Name); err != nil {
-            logger.Info("Deployment doesn't exist")
-            deploy := r.buildDeployment(d, demoApp.Namespace, &demoApp)
-            if err := r.Client.Create(ctx, deploy); err != nil {
-                logger.Error(err, "failed to create deployment", "deployment", d.Name)
-                continue
-            }
-            logger.Info("Deployment created", "deployment", d.Name)
-        }
-    }
+	for _, d := range demoApp.Spec.Deployments {
+		if err := r.checkDeployment(ctx, req, d.Name); err != nil {
+			logger.Info("Deployment doesn't exist")
+			deploy := r.buildDeployment(d, demoApp.Namespace, &demoApp)
+			if err := r.Client.Create(ctx, deploy); err != nil {
+				logger.Error(err, "failed to create deployment", "deployment", d.Name)
+				continue
+			}
+			logger.Info("Deployment created", "deployment", d.Name)
+		}
+	}
 
-// Gateway API
+	// Gateway API
 	// test for demoApp
+	// WORKS
 	err_demoapp := r.Get(ctx,
-	    client.ObjectKey{
-	        Name: demoApp.Name,
-	        Namespace: demoApp.Namespace,
-	    },
-        &demoApp,
-    )
+		client.ObjectKey{
+			Name:      demoApp.Name,
+			Namespace: demoApp.Namespace,
+		},
+		&demoApp,
+	)
 
 	var gw gatewayv1.Gateway
-	err := r.Get(ctx,
+	// check if Gateway object is already present
+	// WORKS
+	err_gw := r.Get(ctx,
 		client.ObjectKey{
 			Name:      demoApp.Name + "-gateway",
 			Namespace: demoApp.Namespace,
@@ -214,8 +225,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		&gw,
 	)
 
-  	// If Gateway object is not found, CR
-	if apierrors.IsNotFound(err) && !apierrors.IsNotFound(err_demoapp) {
+	// If Gateway object is not found, CR
+	if apierrors.IsNotFound(err_gw) && !apierrors.IsNotFound(err_demoapp) {
 		gw = *r.desiredGateway(&demoApp)
 		// create Gateway
 		ctrl_handle, _, err_gateway := r.createGateway(ctx, &demoApp, &gw)
@@ -227,34 +238,35 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Desired HTTP HTTPRoute
 
+	// Get the route
+	var route gatewayv1.HTTPRoute
+	err_route := r.Get(ctx, types.NamespacedName{
+		Name:      demoApp.Name,
+		Namespace: demoApp.Namespace,
+	}, &route)
+
+	// Set the desired Route
+	desired := r.desiredHTTPRoute(&demoApp)
+
+	print(err_route, desired)
 	/*
-		// Get the route
-		var route gatewayv1.HTTPRoute
-		err_route := r.Get(ctx, types.NamespacedName{
-			Name:      demoApp.Name,
-			Namespace: demoApp.Namespace,
-		}, &route)
 
-			// Set the desired Route
-			desired := r.desiredHTTPRoute(&demoApp)
+		// Register in (Scheduler-?)Controller?
+		controllerutil.SetControllerReference(&demoApp, desired, r.Scheme)
 
+		if apierrors.IsNotFound(err_route) {
+			return ctrl.Result{}, r.Create(ctx, desired)
+		}
 
-			// Register in (Scheduler-?)Controller?
-			controllerutil.SetControllerReference(&demoApp, desired, r.Scheme)
+		if err_route != nil {
+			return ctrl.Result{}, err_route
+		}
 
-			if apierrors.IsNotFound(err_route) {
-				return ctrl.Result{}, r.Create(ctx, desired)
-			}
+		patch := client.MergeFrom(route.DeepCopy())
+		route.Spec = desired.Spec
+		route.Labels = desired.Labels
 
-			if err_route != nil {
-				return ctrl.Result{}, err_route
-			}
-
-			patch := client.MergeFrom(route.DeepCopy())
-			route.Spec = desired.Spec
-			route.Labels = desired.Labels
-
-			return ctrl.Result{}, r.Patch(ctx, &route, patch)
+		return ctrl.Result{}, r.Patch(ctx, &route, patch)
 	*/
 	return ctrl.Result{}, nil
 }
@@ -293,10 +305,10 @@ func (r *DemoAppReconciler) buildDeployment(d demov1alpha1.DeploymentSpec, names
 		},
 	}
 
-    // OwnerReference
-    if err := ctrl.SetControllerReference(demoApp, deploy, r.Scheme); err != nil {
-    	return nil
-    }
+	// OwnerReference
+	if err := ctrl.SetControllerReference(demoApp, deploy, r.Scheme); err != nil {
+		return nil
+	}
 
 	// Deployment Strategy
 	if d.Strategy != nil && d.Strategy.Type != "" {
@@ -363,7 +375,6 @@ func buildResources(r *demov1alpha1.ResourceSpec) corev1.ResourceRequirements {
 	}
 	return res
 }
-
 
 func buildReadinessProbe(p *demov1alpha1.ReadinessProbeSpec) *corev1.Probe {
 	if p == nil || p.HTTPGet == nil {
