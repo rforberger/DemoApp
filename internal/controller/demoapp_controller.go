@@ -28,9 +28,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	types "k8s.io/apimachinery/pkg/types"
-	/*
-	   controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	*/
+	controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/utils/ptr"
 )
@@ -44,7 +42,7 @@ type DemoAppReconciler struct {
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=apps.example.com,resources=demoapps/finalizers,verbs=update
-// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch
+// +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=httproutes,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -174,6 +172,8 @@ func (r *DemoAppReconciler) checkDeployment(ctx context.Context, req ctrl.Reques
 }
 
 func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	// r is the kubernetes object
+
 	// TYPE WORKS
 
 	logger := log.FromContext(ctx)
@@ -248,27 +248,24 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Set the desired Route
 	desired := r.desiredHTTPRoute(&demoApp)
 
-	print(err_route, desired)
-	/*
+	// Register in (Scheduler-?)Controller?
+	controllerutil.SetControllerReference(&demoApp, desired, r.Scheme)
 
-		// Register in (Scheduler-?)Controller?
-		controllerutil.SetControllerReference(&demoApp, desired, r.Scheme)
+	if apierrors.IsNotFound(err_route) {
+		return ctrl.Result{}, r.Create(ctx, desired)
+	}
 
-		if apierrors.IsNotFound(err_route) {
-			return ctrl.Result{}, r.Create(ctx, desired)
-		}
+	if err_route != nil {
+		return ctrl.Result{}, err_route
+	}
 
-		if err_route != nil {
-			return ctrl.Result{}, err_route
-		}
+	// now, patch the route
+	patch := client.MergeFrom(route.DeepCopy())
+	route.Spec = desired.Spec
+	route.Labels = desired.Labels
 
-		patch := client.MergeFrom(route.DeepCopy())
-		route.Spec = desired.Spec
-		route.Labels = desired.Labels
+	return ctrl.Result{}, r.Patch(ctx, &route, patch)
 
-		return ctrl.Result{}, r.Patch(ctx, &route, patch)
-	*/
-	return ctrl.Result{}, nil
 }
 
 func (r *DemoAppReconciler) buildDeployment(d demov1alpha1.DeploymentSpec, namespace string, demoApp *demov1alpha1.DemoApp) *appsv1.Deployment {
