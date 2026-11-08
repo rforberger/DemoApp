@@ -121,6 +121,27 @@ func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gateway
 	}
 }
 
+func (r *DemoAppReconciler) desiredService(app *demov1alpha1.DemoApp, name *string, port *int32, targetport *int32) *corev1.Service {
+    svc := &corev1.Service{
+        ObjectMeta: metav1.ObjectMeta{
+            Name:      app.Name,
+            Namespace: app.Namespace,
+        },
+    }
+
+    _, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
+        svc.Spec.Selector = map[string]string{"app": app.Name}
+        svc.Spec.Ports = []corev1.ServicePort{{
+            Name:       name,
+            Port:       port,
+            TargetPort: intstr.FromInt32(targetport),
+            Protocol:   corev1.ProtocolTCP,
+        }}
+        // Owner reference -> garbage collection when the CR is deleted
+        return controllerutil.SetControllerReference(&app, svc, r.Scheme)
+    })
+    return svc
+}
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -258,6 +279,13 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if err_route != nil {
 		return ctrl.Result{}, err_route
 	}
+
+	// Service per Pod
+    for _, d := range app.Spec.Deployments {
+      for _, c := range d.containers {
+        svc := desiredService(&app, c.Name, c.Port, c.targetPort)
+      }
+    }
 
 	// now, patch the route
 	patch := client.MergeFrom(route.DeepCopy())

@@ -22,14 +22,16 @@ spec:
           memory: "128Mi"
       containers:
         - name: frontend-container
-          image: nginx:latest
+          targetPort: 8080
+          image: jxlwqq/http-echo:latest
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
+          args: ["--text","Hello Frontend!"]
     - name: backend
       replicas: 1
       strategy:
@@ -43,6 +45,7 @@ spec:
           memory: "128Mi"
       containers:
         - name: backend-container
+          targetPort: 8080
           image: jxlwqq/http-echo:latest
           readinessProbe:
             httpGet:
@@ -54,12 +57,12 @@ spec:
           args: ["--text","Hello Kubernetes!"]
   gateway:
     name: public-gateway
-    namespace: networking
-    port: 80
+    namespace: default
+    port: 8080
     http:
       hostnames:
-        - demo.example.com
+        - 152.53.208.33
       path: /
-      port: 80
+      port: 8080
 
 
