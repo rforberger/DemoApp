@@ -6,6 +6,7 @@ package controller
 // +kubebuilder:rbac:groups=apps,resources=deployments/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=gateway.networking.k8s.io,resources=gateways/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch;create;update;patch;delete
 
 import (
 	"context"
@@ -54,6 +55,12 @@ type DemoAppReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.24.1/pkg/reconcile
 
+// const for services
+const (
+	defaultServicePort int32 = 80
+	defaultTargetPort  int32 = 8080
+)
+
 func toHostnames(h []string) []gatewayv1.Hostname {
 	out := make([]gatewayv1.Hostname, 0, len(h))
 	for _, v := range h {
@@ -62,8 +69,15 @@ func toHostnames(h []string) []gatewayv1.Hostname {
 	return out
 }
 
+func ptrOr(p *int32, def int32) int32 {
+	if p == nil {
+		return def
+	}
+	return *p
+}
+
 // RBAC TODO for User \"system:serviceaccount:testcompany-system:testcompany-controller-manager\" cannot list resource \"httproutes\" in API group \"gateway.networking.k8s.io\" at the cluster scope"}
-func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gatewayv1.HTTPRoute {
+func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp, gw *gatewayv1.Gateway) *gatewayv1.HTTPRoute {
 	gwNS := app.Spec.Gateway.Namespace
 	if gwNS == "" {
 		gwNS = app.Namespace
@@ -88,7 +102,7 @@ func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gateway
 			CommonRouteSpec: gatewayv1.CommonRouteSpec{
 				ParentRefs: []gatewayv1.ParentReference{
 					{
-						Name:      gatewayv1.ObjectName(app.Spec.Gateway.Name),
+						Name:      gatewayv1.ObjectName(gw.Name), // old:gatewayv1.ObjectName(app.Spec.Gateway.Name),
 						Namespace: (*gatewayv1.Namespace)(&gwNS),
 					},
 				},
@@ -121,27 +135,29 @@ func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp) *gateway
 	}
 }
 
-func (r *DemoAppReconciler) desiredService(app *demov1alpha1.DemoApp, name *string, port *int32, targetport *int32) *corev1.Service {
-    svc := &corev1.Service{
-        ObjectMeta: metav1.ObjectMeta{
-            Name:      app.Name,
-            Namespace: app.Namespace,
-        },
-    }
+// WORKS presemily
+func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha1.DemoApp) (*corev1.Service, error) {
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      app.Name,
+			Namespace: app.Namespace,
+		},
+	}
 
-    _, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
-        svc.Spec.Selector = map[string]string{"app": app.Name}
-        svc.Spec.Ports = []corev1.ServicePort{{
-            Name:       name,
-            Port:       port,
-            TargetPort: intstr.FromInt32(targetport),
-            Protocol:   corev1.ProtocolTCP,
-        }}
-        // Owner reference -> garbage collection when the CR is deleted
-        return controllerutil.SetControllerReference(&app, svc, r.Scheme)
-    })
-    return svc
+	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
+		svc.Spec.Selector = map[string]string{"app": "frontend"} // we set the frontend here to access the frontend with the service
+		svc.Spec.Ports = []corev1.ServicePort{{
+			Name:       app.Name,
+			Port:       ptrOr(app.Spec.ServicePort, defaultServicePort),
+			TargetPort: intstr.FromInt32(ptrOr(app.Spec.TargetPort, defaultTargetPort)),
+			Protocol:   corev1.ProtocolTCP,
+		}}
+		// Owner reference -> garbage collection when the CR is deleted
+		return controllerutil.SetControllerReference(app, svc, r.Scheme)
+	})
+	return svc, err
 }
+
 func (r *DemoAppReconciler) desiredGateway(app *demov1alpha1.DemoApp) *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
@@ -247,6 +263,7 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	)
 
 	// If Gateway object is not found, CR
+	// WORKS
 	if apierrors.IsNotFound(err_gw) && !apierrors.IsNotFound(err_demoapp) {
 		gw = *r.desiredGateway(&demoApp)
 		// create Gateway
@@ -260,6 +277,7 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Desired HTTP HTTPRoute
 
 	// Get the route
+	// WORKS
 	var route gatewayv1.HTTPRoute
 	err_route := r.Get(ctx, types.NamespacedName{
 		Name:      demoApp.Name,
@@ -267,25 +285,27 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}, &route)
 
 	// Set the desired Route
-	desired := r.desiredHTTPRoute(&demoApp)
+	// WORKS
+	desired := r.desiredHTTPRoute(&demoApp, &gw)
 
 	// Register in (Scheduler-?)Controller?
+	// WORKS
 	controllerutil.SetControllerReference(&demoApp, desired, r.Scheme)
 
+	// WORKS
 	if apierrors.IsNotFound(err_route) {
 		return ctrl.Result{}, r.Create(ctx, desired)
 	}
 
+	// WORKS
 	if err_route != nil {
 		return ctrl.Result{}, err_route
 	}
 
-	// Service per Pod
-    for _, d := range app.Spec.Deployments {
-      for _, c := range d.containers {
-        svc := desiredService(&app, c.Name, c.Port, c.targetPort)
-      }
-    }
+	// Service per Service Item
+	svc, err_service := r.desiredService(ctx, &demoApp)
+
+	print(svc, err_service)
 
 	// now, patch the route
 	patch := client.MergeFrom(route.DeepCopy())

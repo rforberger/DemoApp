@@ -131,6 +131,12 @@ type DemoAppSpec struct {
 
 	// Gateway API integration
 	Gateway *GatewayRef `json:"gateway,omitempty"`
+
+	// ServicePort
+	ServicePort *int32 `json:"servicePort,omitempty"`
+
+	// TargetPort
+	TargetPort *int32 `json:"targetPort,omitempty"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.

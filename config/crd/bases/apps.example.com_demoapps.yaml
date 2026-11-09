@@ -209,6 +209,14 @@ spec:
                 - http
                 - name
                 type: object
+              servicePort:
+                description: ServicePort
+                format: int32
+                type: integer
+              targetPort:
+                description: TargetPort
+                format: int32
+                type: integer
             required:
             - deployments
             type: object

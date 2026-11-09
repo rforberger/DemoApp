@@ -5,6 +5,8 @@ metadata:
   namespace: default
 spec:
   foo: "Testvalue"
+  servicePort: 8080
+  targetPort: 8080 # frontend
   deployments:
     - name: frontend
       replicas: 2
@@ -22,7 +24,6 @@ spec:
           memory: "128Mi"
       containers:
         - name: frontend-container
-          targetPort: 8080
           image: jxlwqq/http-echo:latest
           readinessProbe:
             httpGet:
@@ -45,7 +46,6 @@ spec:
           memory: "128Mi"
       containers:
         - name: backend-container
-          targetPort: 8080
           image: jxlwqq/http-echo:latest
           readinessProbe:
             httpGet:
