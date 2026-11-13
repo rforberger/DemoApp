@@ -82,6 +82,9 @@ type DeploymentSpec struct {
 
 	// Container dieses Deployments
 	Containers []ContainerSpec `json:"containers"`
+
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
 type ReadinessProbeSpec struct {

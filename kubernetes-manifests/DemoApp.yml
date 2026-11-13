@@ -9,6 +9,8 @@ spec:
   targetPort: 8080 # frontend
   deployments:
     - name: frontend
+      imagePullSecrets:
+        - name: docker-io-regcred
       replicas: 2
       strategy:
         type: RollingUpdate
@@ -34,27 +36,28 @@ spec:
             periodSeconds: 10
           args: ["--text","Hello Frontend!"]
     - name: backend
+      imagePullSecrets:
+        - name: docker-io-regcred
       replicas: 1
       strategy:
         type: Recreate
       resources:
         requests:
-          cpu: "50m"
-          memory: "64Mi"
+          cpu: "500m"
+          memory: "512Mi"
         limits:
-          cpu: "100m"
-          memory: "128Mi"
+          cpu: "500m"
+          memory: "1024Mi"
       containers:
         - name: backend-container
-          image: jxlwqq/http-echo:latest
+          image: docker.io/rforberger/ai_job_recommendations:2026-11
           readinessProbe:
             httpGet:
               path: /
-              port: 8080
+              port: 5001
               scheme: HTTP
             initialDelaySeconds: 10
             periodSeconds: 15
-          args: ["--text","Hello Kubernetes!"]
   gateway:
     name: public-gateway
     namespace: default
@@ -63,6 +66,6 @@ spec:
       hostnames:
         - 152.53.208.33
       path: /
-      port: 8080
+      port: 5001
 
 

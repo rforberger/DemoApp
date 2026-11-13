@@ -76,7 +76,6 @@ func ptrOr(p *int32, def int32) int32 {
 	return *p
 }
 
-// RBAC TODO for User \"system:serviceaccount:testcompany-system:testcompany-controller-manager\" cannot list resource \"httproutes\" in API group \"gateway.networking.k8s.io\" at the cluster scope"}
 func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp, gw *gatewayv1.Gateway) *gatewayv1.HTTPRoute {
 	gwNS := app.Spec.Gateway.Namespace
 	if gwNS == "" {
@@ -344,7 +343,8 @@ func (r *DemoAppReconciler) buildDeployment(d demov1alpha1.DeploymentSpec, names
 					Labels: labels, // ⚡ Fix here
 				},
 				Spec: corev1.PodSpec{
-					Containers: buildContainers(d.Containers),
+					ImagePullSecrets: d.ImagePullSecrets,
+					Containers:       buildContainers(d.Containers),
 				},
 			},
 		},
