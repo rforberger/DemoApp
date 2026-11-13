@@ -53,7 +53,7 @@ spec:
           image: docker.io/rforberger/ai_job_recommendations:2026-11
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 5001
               scheme: HTTP
             initialDelaySeconds: 10
