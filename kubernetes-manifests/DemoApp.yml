@@ -26,15 +26,15 @@ spec:
           memory: "128Mi"
       containers:
         - name: frontend-container
-          image: jxlwqq/http-echo:latest
+          image: caddy:alpine
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: 8080
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
-          args: ["--text","Hello Frontend!"]
+          args: ["caddy", "reverse-proxy", "--from", "http://ai-jobrecommender.srv.ronnyforberger.de:8080", "--to", "backend-container:5001"]
     - name: backend
       imagePullSecrets:
         - name: docker-io-regcred
