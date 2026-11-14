@@ -231,8 +231,16 @@ spec:
                 description: ServicePort
                 format: int32
                 type: integer
+              servicePortBackend:
+                description: ServicePortBackend
+                format: int32
+                type: integer
               targetPort:
                 description: TargetPort
+                format: int32
+                type: integer
+              targetPortBackend:
+                description: TargetPortBackend
                 format: int32
                 type: integer
             required:

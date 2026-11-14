@@ -7,6 +7,8 @@ spec:
   foo: "Testvalue"
   servicePort: 8080
   targetPort: 8080 # frontend
+  servicePortBackend: 5001
+  targetPortBackend: 5001 # backend
   deployments:
     - name: frontend
       imagePullSecrets:
@@ -34,7 +36,7 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 5
             periodSeconds: 10
-          args: ["caddy", "reverse-proxy", "--from", "http://ai-jobrecommender.srv.ronnyforberger.de:8080", "--to", "backend-container:5001"]
+          args: ["caddy", "reverse-proxy", "--from", "http://ai-jobrecommender.srv.ronnyforberger.de:8080", "--to", "backend:5001"]
     - name: backend
       imagePullSecrets:
         - name: docker-io-regcred
@@ -64,7 +66,7 @@ spec:
     port: 8080
     http:
       hostnames:
-        - 152.53.208.33
+        - ai-jobrecommender.srv.ronnyforberger.de
       path: /
       port: 5001
 

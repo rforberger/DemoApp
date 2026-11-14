@@ -135,25 +135,27 @@ func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp, gw *gate
 }
 
 // WORKS presemily
-func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha1.DemoApp) (*corev1.Service, error) {
+func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha1.DemoApp, service_name string, label_map string, service_port *int32, target_port *int32) (*corev1.Service, error) {
+
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      app.Name,
+			Name:      service_name,
 			Namespace: app.Namespace,
 		},
 	}
 
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
-		svc.Spec.Selector = map[string]string{"app": "frontend"} // we set the frontend here to access the frontend with the service
+		svc.Spec.Selector = map[string]string{"app": label_map} // we set the label here to access the frontend/backend/etc. with the service
 		svc.Spec.Ports = []corev1.ServicePort{{
 			Name:       app.Name,
-			Port:       ptrOr(app.Spec.ServicePort, defaultServicePort),
-			TargetPort: intstr.FromInt32(ptrOr(app.Spec.TargetPort, defaultTargetPort)),
+			Port:       ptrOr(service_port, defaultServicePort),
+			TargetPort: intstr.FromInt32(ptrOr(target_port, defaultTargetPort)),
 			Protocol:   corev1.ProtocolTCP,
 		}}
 		// Owner reference -> garbage collection when the CR is deleted
 		return controllerutil.SetControllerReference(app, svc, r.Scheme)
 	})
+
 	return svc, err
 }
 
@@ -302,10 +304,11 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// Service per Service Item
-	svc, err_service := r.desiredService(ctx, &demoApp)
+	svc1, err1 := r.desiredService(ctx, &demoApp, demoApp.Name, "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort)
+	svc2, err2 := r.desiredService(ctx, &demoApp, "backend", "backend", demoApp.Spec.ServicePortBackend, demoApp.Spec.TargetPortBackend)
 
-	print(svc, err_service)
-
+	print(svc1, err1)
+	print(svc2, err2)
 	// now, patch the route
 	patch := client.MergeFrom(route.DeepCopy())
 	route.Spec = desired.Spec
