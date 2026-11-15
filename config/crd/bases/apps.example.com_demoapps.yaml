@@ -227,6 +227,10 @@ spec:
                 - http
                 - name
                 type: object
+              nodePortFrontend:
+                description: NodePortFrontend
+                format: int32
+                type: integer
               servicePort:
                 description: ServicePort
                 format: int32

@@ -7,6 +7,7 @@ spec:
   foo: "Testvalue"
   servicePort: 8080
   targetPort: 8080 # frontend
+  nodePortFrontend: 30080
   servicePortBackend: 5001
   targetPortBackend: 5001 # backend
   deployments:

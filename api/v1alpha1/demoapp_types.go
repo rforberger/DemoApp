@@ -146,6 +146,9 @@ type DemoAppSpec struct {
 
 	// TargetPortBackend
 	TargetPortBackend *int32 `json:"targetPortBackend,omitempty"`
+
+	// NodePortFrontend
+	NodePortFrontend *int32 `json:"nodePortFrontend,omitempty"`
 }
 
 // DemoAppStatus defines the observed state of DemoApp.

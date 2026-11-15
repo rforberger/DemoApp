@@ -135,7 +135,7 @@ func (r *DemoAppReconciler) desiredHTTPRoute(app *demov1alpha1.DemoApp, gw *gate
 }
 
 // WORKS presemily
-func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha1.DemoApp, service_name string, label_map string, service_port *int32, target_port *int32) (*corev1.Service, error) {
+func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha1.DemoApp, service_name string, label_map string, service_port *int32, target_port *int32, nodeport *int32) (*corev1.Service, error) {
 
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
@@ -146,12 +146,19 @@ func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha
 
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
 		svc.Spec.Selector = map[string]string{"app": label_map} // we set the label here to access the frontend/backend/etc. with the service
-		svc.Spec.Ports = []corev1.ServicePort{{
+		port := corev1.ServicePort{
 			Name:       app.Name,
 			Port:       ptrOr(service_port, defaultServicePort),
 			TargetPort: intstr.FromInt32(ptrOr(target_port, defaultTargetPort)),
 			Protocol:   corev1.ProtocolTCP,
-		}}
+		}
+
+		if nodeport != nil {
+			port.NodePort = *nodeport
+		}
+
+		svc.Spec.Ports = []corev1.ServicePort{port}
+
 		// Owner reference -> garbage collection when the CR is deleted
 		return controllerutil.SetControllerReference(app, svc, r.Scheme)
 	})
@@ -219,6 +226,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger.Info("Reconcile loop starts.")
 
 	// WORKS
+	logger.Info("Building the demoApp object")
+
 	var demoApp demov1alpha1.DemoApp
 	if err := r.Get(ctx, req.NamespacedName, &demoApp); err != nil {
 		NotFound := client.IgnoreNotFound(err)
@@ -229,6 +238,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	// WORKS
 	// Deployment
+	logger.Info("Building the deployment")
+
 	for _, d := range demoApp.Spec.Deployments {
 		if err := r.checkDeployment(ctx, req, d.Name); err != nil {
 			logger.Info("Deployment doesn't exist")
@@ -244,6 +255,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Gateway API
 	// test for demoApp
 	// WORKS
+	logger.Info("Building the Gateway")
+
 	err_demoapp := r.Get(ctx,
 		client.ObjectKey{
 			Name:      demoApp.Name,
@@ -279,6 +292,8 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// Get the route
 	// WORKS
+	logger.Info("Building the HTTPRoute")
+
 	var route gatewayv1.HTTPRoute
 	err_route := r.Get(ctx, types.NamespacedName{
 		Name:      demoApp.Name,
@@ -304,11 +319,18 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// Service per Service Item
-	svc1, err1 := r.desiredService(ctx, &demoApp, demoApp.Name, "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort)
-	svc2, err2 := r.desiredService(ctx, &demoApp, "backend", "backend", demoApp.Spec.ServicePortBackend, demoApp.Spec.TargetPortBackend)
+	logger.Info("Building the services")
 
-	print(svc1, err1)
-	print(svc2, err2)
+	if _, err := r.desiredService(ctx, &demoApp, demoApp.Name, "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort, demoApp.Spec.NodePortFrontend); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if _, err := r.desiredService(ctx, &demoApp, "backend", "backend", demoApp.Spec.ServicePortBackend, demoApp.Spec.TargetPortBackend, nil); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	logger.Info("Patching the route.")
+
 	// now, patch the route
 	patch := client.MergeFrom(route.DeepCopy())
 	route.Spec = desired.Spec
