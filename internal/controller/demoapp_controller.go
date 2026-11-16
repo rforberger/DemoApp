@@ -144,8 +144,16 @@ func (r *DemoAppReconciler) desiredService(ctx context.Context, app *demov1alpha
 		},
 	}
 
+	var service_type corev1.ServiceType
+	if nodeport != nil {
+		service_type = corev1.ServiceTypeNodePort
+	} else {
+		service_type = corev1.ServiceTypeClusterIP
+	}
+
 	_, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
 		svc.Spec.Selector = map[string]string{"app": label_map} // we set the label here to access the frontend/backend/etc. with the service
+		svc.Spec.Type = service_type
 		port := corev1.ServicePort{
 			Name:       app.Name,
 			Port:       ptrOr(service_port, defaultServicePort),
@@ -321,10 +329,17 @@ func (r *DemoAppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// Service per Service Item
 	logger.Info("Building the services")
 
-	if _, err := r.desiredService(ctx, &demoApp, demoApp.Name, "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort, demoApp.Spec.NodePortFrontend); err != nil {
+	// the standard frontend service
+	if _, err := r.desiredService(ctx, &demoApp, demoApp.Name, "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort, nil); err != nil {
 		return ctrl.Result{}, err
 	}
 
+	// the frontend nodeport service
+	if _, err := r.desiredService(ctx, &demoApp, demoApp.Name+"-nodeport", "frontend", demoApp.Spec.ServicePort, demoApp.Spec.TargetPort, demoApp.Spec.NodePortFrontend); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	// the backend service
 	if _, err := r.desiredService(ctx, &demoApp, "backend", "backend", demoApp.Spec.ServicePortBackend, demoApp.Spec.TargetPortBackend, nil); err != nil {
 		return ctrl.Result{}, err
 	}
